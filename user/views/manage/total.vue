@@ -1,5 +1,5 @@
 <template>
-  <div class="home">
+  <div class="total">
     <div class="search">
       <common-form
           class="searchForm"
@@ -16,8 +16,8 @@
       </common-form>
     </div>
     <div class="show">
-      <el-aside class="aside">
-        <common-aside class="common-aside" :menu="level" aside-name="primary"></common-aside>
+      <el-aside>
+        <common-aside :menu="level" aside-name="primary"></common-aside>
       </el-aside>
       <div class="table">
         <common-table
@@ -27,8 +27,7 @@
             :page-name="pageName"
             :has-pager=true
             @changePage="changeList"
-            @checkHome="checkHome"
-            @loadHome="loadHome"
+            @deleteTotal="deleteTotal"
         ></common-table>
       </div>
     </div>
@@ -36,14 +35,14 @@
 </template>
 
 <script>
-import {getHomeList} from '../../api/data'
+import {getTotal,deleteTotal} from '../../api/data'
 import CommonForm from "@/components/CommonForm";
 import CommonAside from "@/components/CommonAside";
 import CommonTable from "@/components/CommonTable";
 
 
 export default {
-  name: "index",
+  name: "total",
 
   components: {
     CommonAside,
@@ -83,9 +82,9 @@ export default {
         },
         {
           //数据中读取的字段的名称
-          prop: "subDay",
+          prop: "creDay",
           //列的名称
-          label: "发布时间",
+          label: "创建时间",
           width: "300px"
         },
         {
@@ -101,7 +100,7 @@ export default {
         pager: 1,
         total: 30
       },
-      pageName:'home',
+      pageName:'total',
       level:[]
     }
   },
@@ -109,7 +108,7 @@ export default {
     getList(name = '') {
       this.config.loading = true
       name ? (this.config.pager = 1) : ''
-      getHomeList({
+      getTotal({
         page: this.config.pager,
         name
       }).then(({data:res}) => {
@@ -124,8 +123,8 @@ export default {
 
     changeList(page){
       this.config.loading = true
-     this.config.pager=page
-      getHomeList({
+      this.config.pager=page
+      getTotal({
         page: this.config.pager,
         name:this.searchForm.keyword
       }).then(({data:res}) => {
@@ -147,17 +146,27 @@ export default {
       console.log(index, row);
     },
 
-    checkHome(row){
-      console.log('Join:edit index:'+row.id)
-      let pageName=this.pageName
-      this.$store.commit('setStanId',{stanId:row.id,stanPage:pageName})
-      console.log('添加 stanId:'+this.$store.state.stanId)
-      this.$router.push({name: 'check'})
-    },
-
-    loadHome(row){
-      console.log('load:'+row.id)
-      alert('下载中……')
+    deleteTotal(row) {
+      //通知，这里使用的是element-ui中MessageBox的confirm方法，因此需要在main.js中进行绑定
+      this.$confirm("此操作将永久删除该信息，是否继续？", "提示", {
+        confirmButtonText: "确认",
+        cancelButtonText: "取消",
+        type: "warning"
+      }).then(() => {
+        const id = row.id
+        console.log('66666666:'+id)
+        deleteTotal({
+          stanId: id
+        }).then(() => {
+          //同$confirm类似
+          this.$message({
+            type: "success",
+            message: "删除成功！"
+          })
+          //更新列表
+          this.getList('')
+        })
+      })
     }
   },
 
@@ -183,10 +192,9 @@ export default {
 </script>
 
 <style lang="less" scoped>
-.home {
+.total {
   background-color: white;
   height: 100%;
-  width: 100%;
   padding: 0;
 
   .search {
@@ -205,12 +213,11 @@ export default {
 .show{
   display: flex;
   padding: 0;
-  .aside {
+  .el-aside {
     width: 250px !important;
     text-align: center;
     height: 100% !important;
-    padding: 0;
-    .common-aside{
+    common-aside{
       height: 100%;
     }
   }

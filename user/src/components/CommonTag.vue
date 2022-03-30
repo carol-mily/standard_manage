@@ -3,7 +3,7 @@
     <el-tag
         v-for="(tag,index) in tags"
         :key="tag.name"
-        :closable="tag.name!=='home'"
+        :closable="tag.name!=='home'&&tag.name!=='total'"
         :effect="$route.name===tag.name ?'dark':'plain'"
         @click="changeMenu(tag)"
         @close="handleClose(tag,index)"
@@ -65,10 +65,12 @@ export default {
 
 <style lang="less" scoped>
 .tabs{
-  padding: 20px;
+  height: 30px;
+  padding: 10px 10px 5px 10px;
+  align-content: center;
   //覆盖原本的样式
   .el-tag{
-    margin-right:15px ;
+    margin-right:5px;
     cursor: pointer;
   }
 }

@@ -3,13 +3,16 @@ import Vue from 'vue'
 import VueRouter from 'vue-router'
 import Main from "../views/Main"
 // import User from "../views/user/index"
-// import Home from "../views/home/index"
+import Home from "../views/home/index"
 // import Mall from "../views/mall/index"
 // import Page1 from "../views/others/pageOne"
 // import Page2 from "../views/others/pageTwo"
 import Login from "../views/login/index"
 import Register from "../views/register/index"
 import Forget from "../views/forget/index"
+// import Check from "../views/standard/check"
+// import Edit from "../views/standard/edit"
+// import uManage from "../views/standard/manage"
 
 //整体引入VueRouter
 Vue.use(VueRouter)
@@ -25,12 +28,12 @@ const routes =[
         redirect:'/home',
         children:[
             //静态路由，现在已改为动态路由
-            // {
-            //     path:'/home',
-            //     //为何可以根据name跳转页面原因在此
-            //     name:'home',
-            //     component:Home
-            // },
+            {
+                path:'/home',
+                //为何可以根据name跳转页面原因在此
+                name:'home',
+                component:Home
+            },
             // {
             //     path:'/user',
             //     name:'user',
@@ -68,7 +71,23 @@ const routes =[
         path:'/forget',
         name:'/forget',
         component: Forget
-    }
+    },
+    // {
+    //     path:'/check',
+    //     name:'/check',
+    //     component: Check
+    // },
+    // {
+    //     path:'/edit',
+    //     name:'/edit',
+    //     component: Edit
+    // },
+    // {
+    //     path:'/umanage',
+    //     name:'/umanage',
+    //     component: uManage
+    // }
+
 ]
 
 //配置VueRouter

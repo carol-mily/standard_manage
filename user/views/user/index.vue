@@ -2,7 +2,8 @@
   <div class="manage" style="height: 100%" >
     <el-dialog
         :title="operateType==='add' ? '新增用户' : '更新用户'"
-        :visible.sync="isShow">
+        :visible.sync="isShow"
+        :modal-append-to-body="false">
       <common-form
           :form-label="operateFormLabel"
           :form="operateForm"
@@ -27,9 +28,11 @@
         :table-data="tableData"
         :table-label="tableLabel"
         :config="config"
+        :has-pager=true
+        :page-name="pageName"
         @changePage="getList"
-        @edit="editUser"
-        @del="delUser"
+        @editUser="editUser"
+        @deleteUser="delUser"
     ></common-table>
   </div>
 </template>
@@ -37,7 +40,7 @@
 <script>
 import CommonForm from "@/components/CommonForm";
 import CommonTable from "@/components/CommonTable";
-import {getUser} from "../../api/data"
+import {createUser,updateUser,deleteUser,getUser} from "../../api/data"
 
 export default {
   name: "index",
@@ -54,17 +57,21 @@ export default {
       operateFormLabel: [
         {
           model: 'name',
-          label: "姓名",
+          label: "用户名",
           type: "input",
+          style: "width:200px;",
         },
         {
-          model: 'age',
-          label: "年龄",
+          model: 'phone',
+          label: "手机号",
           type: "input",
-        }, {
+          style: "width:200px;",
+        },
+        {
           model: 'sex',
           label: '性别',
           type: 'select',
+          style: "width:200px;",
           opts: [
             {
               label: '男',
@@ -78,22 +85,30 @@ export default {
         },
         {
           model: 'birth',
-          label: '出生日期',
-          type: 'date'
+          label: "出生日期",
+          type: "date",
+          style: "width:200px;",
+        },
+        {
+          model: 'email',
+          label: "邮箱号",
+          type: "input",
+          style: "width:200px;",
         },
         {
           model: 'addr',
-          label: '地址',
-          type: 'input'
-        }
+          label: "地址",
+          type: "input",
+          style: "width:200px;",
+        },
+        {
+          model: 'status',
+          label: "身份",
+          type: "input",
+          style: "width:200px;",
+        },
       ],
-      operateForm: {
-        name: '',
-        addr: '',
-        age: '',
-        birth: '',
-        sex: ''
-      },
+      operateForm: {},
       formLabel: [
         {
           model: "keyword",
@@ -114,15 +129,15 @@ export default {
         },
         {
           //数据中读取的字段的名称
-          prop: "age",
+          prop: "phone",
           //列的名称
-          label: "年龄"
+          label: "手机号码"
         },
         {
           //数据中读取的字段的名称
-          prop: "sexLabel",
+          prop: "status",
           //列的名称
-          label: "性别"
+          label: "身份"
         },
         {
           //数据中读取的字段的名称
@@ -136,28 +151,43 @@ export default {
           prop: "addr",
           //列的名称
           label: "地址",
-          width: 320
+          width: 200
+        },
+        {
+          //数据中读取的字段的名称
+          prop: "sex",
+          //列的名称
+          label: "性别",
+          width: 100
+        },
+        {
+          //数据中读取的字段的名称
+          prop: "email",
+          //列的名称
+          label: "邮箱",
+          width: 300
         }
       ],
       //默认页数值
       config: {
         pager: 1,
         total: 30
-      }
+      },
+      pageName:'user'
     }
   },
 
   methods: {
     confirm() {
       if (this.operateType === 'edit') {  //编辑
-        this.$http.post('/user/edit', this.operateForm).then(res => {
+        updateUser(this.operateForm).then(res => {
           console.log(res)
           this.isShow = false
           //更新列表
           this.getList()
         })
       } else {  //新增
-        this.$http.post('/user/add', this.operateForm).then(res => {
+        createUser(this.operateForm).then(res => {
           console.log(res)
           this.isShow = false
           //更新列表
@@ -213,8 +243,8 @@ export default {
         type:"warning"
       }).then(()=>{
         const id= row.id
-        this.$http.post("user/del",{
-          params:[id]
+        deleteUser({
+          id:id
         }).then(()=>{
           //同$confirm类似
           this.$message({

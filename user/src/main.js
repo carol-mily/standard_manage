@@ -26,7 +26,7 @@ router.beforeEach((to, from, next) => {
     const token = store.state.user.token
     //若token不存在且或者当前不为login页面时，不允许进入其他页面
     //注册和忘记密码界面无法进入的原因应该在这里
-    if (!token && to.name !== '/login') {
+    if (!token && (to.name !== '/login'&&to.name !== '/register'&&to.name !== '/forget')) {
         console.log("当前跳转网页为："+to.name)
         next({name: '/login'})
     }else if(token && to.name==='/login'){
@@ -35,6 +35,7 @@ router.beforeEach((to, from, next) => {
         next()
     }
 })
+
 
 new Vue({
     store,

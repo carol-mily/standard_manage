@@ -4,7 +4,8 @@ import Cookie from 'js-cookie'
 
 export default {
     state: {
-        token: ''
+        token: '',
+        user:{}
     },
 
     mutations: {
@@ -22,6 +23,14 @@ export default {
         getToken(state) {
             //若缓存中有token则直接获取，若没有则从state中获取token
             state.token = state.token || Cookie.get('token')
+        },
+
+        setUser(state,val){
+            state.user=val
+        },
+
+        clearUser(state){
+            state.user= {}
         }
     }
 }

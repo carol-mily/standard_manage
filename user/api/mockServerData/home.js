@@ -1,136 +1,98 @@
 //mock模拟首页的相关数据
 import Mock from 'mockjs'
 
-let List = []
+let totalList = []
+const count = 25
+
+for (let i = 1; i <= count; i++) {
+    totalList.push(
+        Mock.mock({
+            id:i,
+            name: '数据标准' + i,
+            subDay: Mock.Random.date(),
+            manager: Mock.Random.cname()
+        })
+    )
+}
+
 export default {
-    getData: () => {
-        //Mock.Random.float 产生随机数100到8000之间 保留小数 最小0位 最大0位
-        for (let i = 0; i < 7; i++) {
-            List.push(
-                //生成模拟数据
-                Mock.mock({
-                    苹果: Mock.Random.float(100, 8000, 0, 0),
-                    vivo: Mock.Random.float(100, 8000, 0, 0),
-                    oppo: Mock.Random.float(100, 8000, 0, 0),
-                    魅族: Mock.Random.float(100, 8000, 0, 0),
-                    三星: Mock.Random.float(100, 8000, 0, 0),
-                    小米: Mock.Random.float(100, 8000, 0, 0)
-                })
-            )
-        }
+    getTotalList: config => {
+        const {name, page, limit = 10} = JSON.parse(config.body)
+        console.log('name:' + name, 'page:' + page, '分页大小limit:' + limit)
+        //筛选name或者manager匹配的项目
+        const mockList = totalList.filter(item => {
+            if (name && item.name.indexOf(name) === -1 && item.manager.indexOf(name) === -1) return false
+            return true
+        })
+        //对分页数据的处理
+        const pageList = mockList.filter((item, index) => index < limit * page && index >= limit * (page - 1))
         return {
-            //状态码
             code: 20000,
-            data: {
-                // 饼图
-                videoData: [
-                    {
-                        name: '小米',
-                        value: 2999
-                    },
-                    {
-                        name: '苹果',
-                        value: 5999
-                    },
-                    {
-                        name: 'vivo',
-                        value: 1500
-                    },
-                    {
-                        name: 'oppo',
-                        value: 1999
-                    },
-                    {
-                        name: '魅族',
-                        value: 2200
-                    },
-                    {
-                        name: '三星',
-                        value: 4500
-                    }
-                ],
-                // 柱状图
-                userData: [
-                    {
-                        date: '周一',
-                        new: 5,
-                        active: 200
-                    },
-                    {
-                        date: '周二',
-                        new: 10,
-                        active: 500
-                    },
-                    {
-                        date: '周三',
-                        new: 12,
-                        active: 550
-                    },
-                    {
-                        date: '周四',
-                        new: 60,
-                        active: 800
-                    },
-                    {
-                        date: '周五',
-                        new: 65,
-                        active: 550
-                    },
-                    {
-                        date: '周六',
-                        new: 53,
-                        active: 770
-                    },
-                    {
-                        date: '周日',
-                        new: 33,
-                        active: 170
-                    }
-                ],
-                // 折线图
-                orderData: {
-                    date: ['20191001', '20191002', '20191003', '20191004', '20191005', '20191006', '20191007'],
-                    data: List
+            //总数据长度
+            count: mockList.length,
+            //当前页内数据
+            list: pageList,
+            level: [
+                {
+                    id:1,
+                    ename: 'total',
+                    name: '总体',
                 },
-                tableData: [
-                    {
-                        name: 'oppo',
-                        todayBuy: 500,
-                        monthBuy: 3500,
-                        totalBuy: 22000
-                    },
-                    {
-                        name: 'vivo',
-                        todayBuy: 300,
-                        monthBuy: 2200,
-                        totalBuy: 24000
-                    },
-                    {
-                        name: '苹果',
-                        todayBuy: 800,
-                        monthBuy: 4500,
-                        totalBuy: 65000
-                    },
-                    {
-                        name: '小米',
-                        todayBuy: 1200,
-                        monthBuy: 6500,
-                        totalBuy: 45000
-                    },
-                    {
-                        name: '三星',
-                        todayBuy: 300,
-                        monthBuy: 2000,
-                        totalBuy: 34000
-                    },
-                    {
-                        name: '魅族',
-                        todayBuy: 350,
-                        monthBuy: 3000,
-                        totalBuy: 22000
-                    }
-                ]
-            }
+                {
+                    id:2,
+                    ename:'common',
+                    name: '通用',
+                    children: [
+                        {
+                            id:2.1,
+                            ename: 'base',
+                            name: '基础',
+                        },
+                        {
+                            id:2.2,
+                            ename: 'safe',
+                            name: '安全',
+                        },
+                        {
+                            id:2.3,
+                            ename: 'green',
+                            name: '绿色',
+                        },
+                        {
+                            id:2.4,
+                            ename: 'smart',
+                            name: '智慧',
+                        }
+                    ]
+                },
+                {
+                    id:3,
+                    ename:'build',
+                    name: '建设',
+                    children: [
+                        {
+                            id:3.1,
+                            ename: 'base',
+                            name: '基础',
+                        },
+                        {
+                            id:3.2,
+                            ename: 'safe',
+                            name: '安全',
+                        },
+                        {
+                            id:3.3,
+                            ename: 'green',
+                            name: '绿色',
+                        },
+                        {
+                            id:3.4,
+                            ename: 'smart',
+                            name: '智慧',
+                        }
+                    ]
+                },
+            ],
         }
     }
 }

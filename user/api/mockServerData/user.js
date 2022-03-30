@@ -17,20 +17,53 @@ function param2Obj(url) {
 }
 
 let List = []
-const count = 200
+
+const count = 20
 
 for (let i = 0; i < count; i++) {
     List.push(
         Mock.mock({
             id: Mock.Random.guid(),
             name: Mock.Random.cname(),
+            phone: /^1[34578]\d{9}$/,//随机电话号码
+            password: Mock.Random.integer(1, 10000000),
+            status: 'user',
             addr: Mock.mock('@county(true)'),
-            'age|18-60': 1,
             birth: Mock.Random.date(),
-            sex: Mock.Random.integer(0, 1)
+            sex: Mock.Random.integer(0, 1),
+            email: Mock.Random.email('qq.com')
         })
     )
 }
+
+List.push(
+    Mock.mock({
+        id: count,
+        name: 'user1',
+        phone: '1',
+        password: '1',
+        status: 'user',
+        addr: Mock.mock('@county(true)'),
+        birth: Mock.Random.date(),
+        sex: Mock.Random.integer(0, 1),
+        email: Mock.Random.email('qq.com'),
+    })
+)
+
+List.push(
+    Mock.mock({
+        id: count + 1,
+        name: 'manager1',
+        phone: '123',
+        password: '123',
+        status: 'admin',
+        addr: Mock.mock('@county(true)'),
+        'age|18-60': 1,
+        birth: Mock.Random.date(),
+        sex: Mock.Random.integer(0, 1),
+        email: Mock.Random.email('qq.com'),
+    })
+)
 
 export default {
     /**
@@ -40,7 +73,7 @@ export default {
      * @return {{code: number, count: number, data: *[]}}
      */
     getUserList: config => {
-        const {name, page = 1, limit = 20} = param2Obj(config.url)
+        const {name, page = 1, limit = 20} = JSON.parse(config.body)
         console.log('name:' + name, 'page:' + page, '分页大小limit:' + limit)
         const mockList = List.filter(user => {
             if (name && user.name.indexOf(name) === -1 && user.addr.indexOf(name) === -1) return false
@@ -53,22 +86,49 @@ export default {
             list: pageList
         }
     },
+
+    /**
+     * 修改密码
+     * 要带参数 name, page, limt; name可以不填, page,limit有默认值。
+     * @param name, page, limit
+     * @return {{code: number, count: number, data: *[]}}
+     */
+    changePassword: config => {
+        const {phone, password} = JSON.parse(config.body)
+        List.some(u => {
+            if (u.phone === phone) {
+                u.password = password
+                return true
+            }
+        })
+        return {
+            code: 20000,
+            data: {
+                message: '修改成功'
+            }
+        }
+    },
+
     /**
      * 增加用户
      * @param name, addr, age, birth, sex
      * @return {{code: number, data: {message: string}}}
      */
     createUser: config => {
-        const {name, addr, age, birth, sex} = JSON.parse(config.body)
+        const {name, phone, addr, email, birth, sex, status} = JSON.parse(config.body)
         console.log(JSON.parse(config.body))
         List.unshift({
-            id: Mock.Random.guid(),
             name: name,
             addr: addr,
-            age: age,
+            phone: phone,
+            email: email,
+            status: status,
             birth: birth,
             sex: sex
         })
+        for (let i = 0; i < List.length; i++) {
+            List[i].id = i
+        }
         return {
             code: 20000,
             data: {
@@ -82,18 +142,14 @@ export default {
      * @return {*}
      */
     deleteUser: config => {
-        const {id} = param2Obj(config.url)
-        if (!id) {
-            return {
-                code: -999,
-                message: '参数不正确'
-            }
-        } else {
-            List = List.filter(u => u.id !== id)
-            return {
-                code: 20000,
-                message: '删除成功'
-            }
+        const {id} = JSON.parse(config.body)
+        List = List.filter(u => u.id !== id)
+        for (let i = 0; i < List.length; i++) {
+            List[i].id = i
+        }
+        return {
+            code: 20000,
+            message: '删除成功'
         }
     },
     /**
@@ -112,19 +168,23 @@ export default {
             }
         }
     },
+
+
     /**
      * 修改用户
      * @param id, name, addr, age, birth, sex
      * @return {{code: number, data: {message: string}}}
      */
     updateUser: config => {
-        const {id, name, addr, age, birth, sex} = JSON.parse(config.body)
+        const {id, name, phone, addr, email, birth, sex, status} = JSON.parse(config.body)
         const sex_num = parseInt(sex)
         List.some(u => {
             if (u.id === id) {
                 u.name = name
+                u.phone = phone
+                u.email = email
+                u.status = status
                 u.addr = addr
-                u.age = age
                 u.birth = birth
                 u.sex = sex_num
                 return true
