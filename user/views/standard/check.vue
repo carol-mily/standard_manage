@@ -38,7 +38,6 @@
       </div>
       <div class="c-content" style="height: 100%">
         <info-card
-            :card-name="'check'"
             :card-data="cardStanData"
             @checkStan="checkStan"></info-card>
       </div>
@@ -47,19 +46,22 @@
         <!--          <img class="download" :src="downloadImg" style="width: 18px; height: 18px"/>-->
         <!--          <img class="edit" :src="editImg" style="width: 18px; height: 18px"/>-->
         <!--        </div>-->
-        <el-button class="download" type="primary" icon="el-icon-download" plain @click="download"></el-button>
-        <el-button class="edit" v-if="this.$store.state.standard.pageName" type="primary" icon="el-icon-edit" plain @click="editStan"></el-button>
+        <el-button class="download" v-if="this.$store.state.standard.stanPage!=='myManage'" type="primary" icon="el-icon-download" plain @click="download"></el-button>
+        <el-button class="edit" v-if="this.$store.state.standard.stanPage==='myJoin'" type="primary" icon="el-icon-edit" plain @click="editStan"></el-button>
+        <el-button class="download1" v-if="this.$store.state.standard.stanPage==='myManage'" type="primary" icon="el-icon-download" plain @click="download"></el-button>
+        <el-button class="edit1" v-if="this.$store.state.standard.stanPage==='myManage'" type="primary" icon="el-icon-edit" plain @click="editStan"></el-button>
+        <el-button class="manage" v-if="this.$store.state.standard.stanPage==='myManage'" type="primary" icon="el-icon-user" plain @click="manageStan"></el-button>
       </div>
     </el-header>
     <el-container class="mcontainer">
-      <el-aside class="aside">
+      <div class="aside">
           <common-aside
               :aside-name="'check'"
               :menu="tableList"
               @chooseTable="changeTable"
               @checkTable="checkTable"></common-aside>
-      </el-aside>
-      <el-main class="main">
+      </div>
+      <div class="main">
           <common-table
               :table-data="itemData"
               :table-label="itemLabel"
@@ -67,7 +69,7 @@
               :has-pager=false
               style="height: 100%;width:100%"
           ></common-table>
-      </el-main>
+      </div>
     </el-container>
   </el-container>
 </template>
@@ -78,6 +80,7 @@ import CommonAside from "@/components/CommonAside";
 import CommonTable from "@/components/CommonTable";
 import CommonForm from "@/components/CommonForm";
 import {getStanInfo, getStanItem} from "../../api/data";
+import Level from '../../util/level'
 
 export default {
   name: "check",
@@ -105,7 +108,7 @@ export default {
           disabled:true
         },
         {
-          model: 'manager',
+          model: 'managerName',
           label: "负责人",
           type: "input",
           style: "width:200px;",
@@ -121,8 +124,9 @@ export default {
         {
           model: 'level',
           label: '分级',
-          type: 'input',
+          type: 'cascader',
           style: "width:200px;",
+          options: this.$store.state.level.level,
           disabled:true
         },
         {
@@ -142,13 +146,6 @@ export default {
 
       ],
       asideStanData: {
-        name: '',
-        ename: '',
-        manager: '',
-        editors: '',
-        level: '',
-        creDay: '',
-        description: ''
       },
       asideTableLabel: [
         {
@@ -161,13 +158,6 @@ export default {
         {
           model: 'ename',
           label: "英文名称",
-          type: "input",
-          style: "width:200px;",
-          disabled:true
-        },
-        {
-          model: 'editors',
-          label: "编写者",
           type: "input",
           style: "width:200px;",
           disabled:true
@@ -191,8 +181,6 @@ export default {
       asideTableData: {
         name: '',
         ename: '',
-        manager: '',
-        editors: '',
         level: '',
         creDay: '',
         description: ''
@@ -201,9 +189,10 @@ export default {
         id: '',
         name: '',
         ename: '',
-        manager: '',
+        managerName: '',
         editors: '',
         creDay: '',
+        levelName:'',
         level: '',
         description: '',
       },
@@ -211,8 +200,6 @@ export default {
       itemData: [],
       itemLabel: [
         {
-          //数据中读取的字段的名称
-          prop: "id",
           //列的名称
           label: "序号",
           width:"100px"
@@ -282,17 +269,20 @@ export default {
         //上面是使用es6的解构赋值为res
         console.log(res, 'res')
         let editor = ''
-        for (let i = 0; i < res.list[0].editors.length; i++) {
-          editor = editor + res.list[0].editors[i] + ' '
+        for (let i = 0; i < res.data.list.editors.length; i++) {
+          editor = editor + res.data.list.editors[i].name + ' '
         }
         //设置全局变量
         // this.$store.commit('clearStandard')
         // this.$store.commit('setStandard',res.list[0])
         // this.cardData=this.asyncStan
-        this.cardStanData = res.list[0]
+        this.cardStanData = res.data.list
+        this.cardStanData.managerName=res.data.list.manager.name
         this.cardStanData.editors = editor
-        this.tableList=res.list[0].table
-        this.itemData=res.stanItem
+        this.cardStanData.levelName=Level.getLevelName(this.$store.state.level.level,res.data.list.level1,res.data.list.level2,res.data.list.level3)
+        this.cardStanData.level=Level.getLevelList(this.$store.state.level.level,res.data.list.level1,res.data.list.level2,res.data.list.level3)
+        this.tableList=res.data.list.table
+        this.itemData=res.data.list.table[0].item
       });
     },
 
@@ -306,7 +296,7 @@ export default {
       }).then(({data: res}) => {
         //上面是使用es6的解构赋值为res
         console.log(res, 'res')
-        this.itemData=res.stanItem
+        this.itemData=res.data.stanItem
       });
     },
 
@@ -327,17 +317,8 @@ export default {
       //表内数据显示为当前行内的数据，回写
       this.asideTableData = this.tableList[item.id]
       console.log('表的信息：'+this.asideTableData)
-      //换表，可以尝试看看有方法调用之前的函数吗
-      this.itemNum= item.id
-      getStanItem({
-        stanId:this.$store.state.standard.stanId,
-        tableId: item.id,
-        pageName: this.$store.state.standard.stanPage,
-      }).then(({data: res}) => {
-        //上面是使用es6的解构赋值为res
-        console.log(res, 'res')
-        this.itemData=res.stanItem
-      });
+      //换表
+      this.changeTable(item)
     },
 
     //下载数据标准
@@ -349,6 +330,12 @@ export default {
     editStan(){
       console.log('Join:check -> edit index:'+this.cardStanData.id)
       this.$router.push({name: 'edit'})
+    },
+
+    //管理数据标准
+    manageStan(){
+      console.log('Join:check -> manage index:'+this.cardStanData.id)
+      this.$router.push({name: 'umanage'})
     },
   },
 
@@ -376,8 +363,10 @@ export default {
 <style scoped lang="less">
 .check {
   background-color: white;
+  height: 100%;
+  width: 100%;
   padding: 0;
-  max-width: 100%;
+  margin: 0;
 
   .stanDialog,.tableDialog{
     display: flex;
@@ -444,6 +433,15 @@ export default {
         width: 45px;
         height: 30px;
       }
+      .download1, .edit1,.manage {
+        margin: 5px 5px 5px 5px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 13px;
+        width: 40px;
+        height: 30px;
+      }
     }
   }
 
@@ -456,14 +454,14 @@ export default {
     align-items: center;
 
     .aside {
-      width: 250px !important;
+      width: 250px;
       text-align: center;
-      height: 500px !important;
+      height: 100%;
     }
 
     .main {
-      width: 100%;
-      height: 500px !important;
+      width: calc(100% - 250px);
+      height: 100%;
       padding: 0;
       common-table{
         width: 100%;

@@ -24,6 +24,20 @@
       ></el-input>
     </el-form-item>
     <el-form-item
+        label="手机号"
+        label-width="80px"
+        prop="phone"
+        class="phone"
+        style="width: 350px; height: 40px"
+    >
+      <el-input
+          type="input"
+          v-model="form.phone"
+          autocomplete="off"
+          placeholder="请输入手机号码"
+      ></el-input>
+    </el-form-item>
+    <el-form-item
         label="密码"
         label-width="80px"
         prop="password"
@@ -49,20 +63,6 @@
           placeholder="请再次输入密码"
       ></el-input>
     </el-form-item>
-    <el-form-item
-        label="手机号"
-        label-width="80px"
-        prop="phone"
-        class="phone"
-        style="width: 350px; height: 40px"
-    >
-      <el-input
-          type="input"
-          v-model="form.phone"
-          autocomplete="off"
-          placeholder="请输入手机号码"
-      ></el-input>
-    </el-form-item>
 
     <el-form-item class="register_submit" label-width="0px">
       <el-button type="primary" @click="register"  style="margin-left:140px">注册</el-button>
@@ -71,7 +71,7 @@
 </template>
 
 <script>
-import {getReg} from "../../api/data";
+import {register} from "../../api/data";
 
 export default {
   name: "index",
@@ -161,7 +161,7 @@ export default {
       else if(this.form.password!==this.form.password2){
         this.$message.warning("两次密码不相同！")
       }else {
-        getReg(this.form).then(({data:res})=>{
+        register(this.form).then(({data:res})=>{
           if(res.code === 20000){
             console.log(res)
             this.$message.success("注册成功！")

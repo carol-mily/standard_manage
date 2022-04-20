@@ -18,16 +18,16 @@
           <el-menu-item
               @click="clickMenu(item)"
               v-if="!item.children"
-              :index="item.id"
-              :key="item.id"
+              :index="item.id.toString()"
+              :key="item.id.toString()"
               style="width:150px; text-align: center; font-size: 17px">
             <!--          <i :class="'el-icon-'+item.icon"></i>-->
             <span slot="title">{{ item.label }}</span>
           </el-menu-item>
           <!--循环读取有子菜单的item-->
           <el-submenu
-              :index="item.id"
-              :key="item.id"
+              :index="item.id.toString()"
+              :key="item.id.toString()"
               v-if="item.children"
               style="width:150px; text-align: center; font-size: 16px">
             <template slot="title">
@@ -36,11 +36,11 @@
             </template>
             <!--二级菜单渲染-->
             <!---这个组件的格式问题未解决-->
-            <el-menu-item-group v-for="subItem in item.children" :key="subItem.id" :index="subItem.id">
+            <el-menu-item-group v-for="subItem in item.children" :key="subItem.id" :index="subItem.id.toString()">
               <el-menu-item
                   @click="clickMenu(subItem)"
-                  :index="subItem.id"
-                  :key="subItem.id"
+                  :index="subItem.id.toString()"
+                  :key="subItem.id.toString()"
                   style="width:150px; text-align: center; font-size: 17px;">{{ subItem.label }}
               </el-menu-item>
             </el-menu-item-group>
@@ -126,7 +126,7 @@ export default {
     align-items: center;
     padding: 0;
     height: 100%;
-    width:1000px ;
+    width:1500px ;
     background-color: #001529;
 
     h3 {

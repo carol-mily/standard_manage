@@ -13,24 +13,25 @@
         <div class="case1" v-if="show===false||cardId!==item.id" @click="overCard(item.id)">
           <h3>{{ item.name }}</h3>
           <span class="manager">负责人：{{ item.manager }}</span><br>
-          <span class="day">创建时间：{{ item.creDay }}</span>
+          <span class="day">创建时间：{{ item.creDay }}</span><br>
+          <span class="state">状态：{{ item.stateName }}</span>
         </div>
-        <div class="case2" v-if="show===true&&cardId===item.id&&pageName==='join'" @click="outCard()">
-          <div class="l-content2" @click="check(item.id)">
+        <div class="case2" v-if="show===true&&cardId===item.id&&pageName==='myJoin'" @click="outCard()">
+          <div class="l-content2" @click="check(item)">
             <img class="check" :src="eyeImg" style="width: 40px; height: 40px"/>
           </div>
-          <div class="r-content2"  @click="edit(item.id)">
+          <div class="r-content2"  @click="edit(item)">
             <img class="edit" :src="editImg" style="width: 40px; height: 40px"/>
           </div>
         </div>
-        <div class="case3" v-if="show===true&&cardId===item.id&&pageName==='manage'" @click="outCard()">
-          <div class="l-content3" @click="check(item.id)">
+        <div class="case3" v-if="show===true&&cardId===item.id&&pageName==='myManage'" @click="outCard()">
+          <div class="l-content3" @click="check(item)">
             <img class="check" :src="eyeImg" style="width: 30px; height: 30px"/>
           </div>
-          <div class="c-content3" @click="edit(item.id)">
+          <div class="c-content3" @click="edit(item)">
             <img class="edit" :src="editImg" style="width: 30px; height: 30px"/>
           </div>
-          <div class="r-content3" @click="manage(item.id)">
+          <div class="r-content3" @click="manage(item)">
             <img class="manage" :src="manageImg" style="width: 30px; height: 30px"/>
           </div>
         </div>
@@ -75,18 +76,18 @@ export default {
       this.cardId = 0
     },
 
-    check(index){
-      this.$emit('check',index)
+    check(item){
+      this.$emit('check',item)
       // this.$router.push({name: 'check'})
     },
 
-    edit(index){
-      this.$emit('edit',index)
+    edit(item){
+      this.$emit('edit',item)
       // this.$router.push({name: 'edit'})
     },
 
-    manage(index){
-      this.$emit('manage',index)
+    manage(item){
+      this.$emit('manage',item)
       // this.$router.push({name: 'umanage'})
     }
   }
@@ -122,7 +123,8 @@ export default {
         margin-left: 20px;
       }
 
-      .manager, .day {
+      .manager, .day,.state {
+        display: inline;
         color: #999999;
         font-size: 15px;
         margin-left: 20px;

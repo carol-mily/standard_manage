@@ -2,18 +2,17 @@
     <div class="stanCard">
       <div class="main">
         <div class="left">
-          <span class="manager">负责人：{{ cardData.manager }}</span>
+          <span class="manager">负责人：{{ cardData.managerName }}</span>
           <span class="editor">编写者：{{ cardData.editors }}</span>
         </div>
         <div class="right">
           <span class="creDay">创建时间：{{ cardData.creDay }}</span>
-          <span class="level">分 级：{{ cardData.level }}</span>
+          <span class="level">分 级：{{ cardData.levelName }}</span>
         </div>
       </div>
       <div class="rooter">
         <span class="description">简 述：{{ cardData.description }}</span>
-        <el-link v-if="cardName==='check'" class="link" type="primary" @click="checkStan">查看详情</el-link>
-        <el-link v-if="cardName==='edit'" class="link" type="primary" @click="checkStan">编辑信息</el-link>
+        <el-link class="link" type="primary" @click="checkStan">查看详情</el-link>
       </div>
     </div>
 </template>

@@ -39,6 +39,7 @@ export default {
 }
 
 .main {
+  background-color: white;
   padding: 0 10px 10px 10px;
   width: 100%;
   height: 100%;

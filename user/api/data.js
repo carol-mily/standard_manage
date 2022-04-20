@@ -28,15 +28,6 @@ export const getTotal=(params)=>{
     })
 }
 
-export const deleteTotal=(params)=>{
-    return axios.request({
-        //mock给定的地址
-        url: '/standard/deleteTotal',
-        method: 'get',
-        data:params
-    })
-}
-
 export const getHomeList=(params)=>{
     return axios.request({
         //mock给定的地址
@@ -77,6 +68,15 @@ export const editStan=(params)=>{
     return axios.request({
         //mock给定的地址
         url: '/standard/editStan',
+        method: 'get',
+        data:params
+    })
+}
+
+export const editStanState=(params)=>{
+    return axios.request({
+        //mock给定的地址
+        url: '/standard/editStanState',
         method: 'get',
         data:params
     })
@@ -154,9 +154,88 @@ export const addItem=(params)=>{
     })
 }
 
-export const getUser = (params) => {
+export const getTotalLevel=()=>{
     return axios.request({
-        url: '/user/getUser',
+        //mock给定的地址
+        url: '/standard/getTotalLevel',
+        method: 'get',
+    })
+}
+
+export const getLevel=(params)=>{
+    return axios.request({
+        //mock给定的地址
+        url: '/standard/getLevel',
+        method: 'get',
+        data:params
+    })
+}
+
+export const addLevel=(params)=>{
+    return axios.request({
+        //mock给定的地址
+        url: '/standard/addLevel',
+        method: 'get',
+        data:params
+    })
+}
+
+export const editLevel=(params)=>{
+    return axios.request({
+        //mock给定的地址
+        url: '/standard/editLevel',
+        method: 'get',
+        data:params
+    })
+}
+
+export const deleteLevel=(params)=>{
+    return axios.request({
+        //mock给定的地址
+        url: '/standard/deleteLevel',
+        method: 'get',
+        data:params
+    })
+}
+
+/*
+这里是user
+ */
+export const logIn = (params) => {
+    return axios.request({
+        url: '/user/logIn',
+        method: 'get',
+        data:params
+    })
+}
+
+export const register = (params) => {
+    return axios.request({
+        url: '/user/register',
+        method: 'get',
+        data:params
+    })
+}
+
+export const changePassword = (params) => {
+    return axios.request({
+        url: '/user/changePassword',
+        method: 'get',
+        data:params
+    })
+}
+
+export const getUser4Name = (params) => {
+    return axios.request({
+        url: '/user/getUser4Name',
+        method: 'get',
+        data:params
+    })
+}
+
+export const getUser4Phone = (params) => {
+    return axios.request({
+        url: '/user/getUser4Phone',
         method: 'get',
         data:params
     })
@@ -186,34 +265,35 @@ export const deleteUser = (params) => {
     })
 }
 
-export const changePassword = (params) => {
+//message
+export const getMessageList = (params) => {
     return axios.request({
-        url: '/user/changePassword',
+        url: '/message/getMessageList',
         method: 'get',
         data:params
     })
 }
 
-export const getMenu = (params) =>{
+export const setRead = (params) => {
     return axios.request({
-        url: '/permission/getMenu',
-        method: 'post',
+        url: '/message/setRead',
+        method: 'get',
         data:params
     })
 }
 
-export const getReg = (params)=>{
+export const deleteMessage = (params) => {
     return axios.request({
-        url: '/permission/getReg',
-        method:'post',
+        url: '/message/deleteMessage',
+        method: 'get',
         data:params
     })
 }
 
-export const getForget= (params)=>{
+export const sendMessage = (params) => {
     return axios.request({
-        url: '/permission/getForget',
-        method:'post',
+        url: '/message/sendMessage',
+        method: 'get',
         data:params
     })
 }

@@ -41,7 +41,7 @@ export default {
   data() {
     return {
       userImg: require('../../src/assets/images/logo.png'),
-      pageName:'join',
+      pageName:'myJoin',
       formLabel: [
         {
           model: "keyword",
@@ -85,12 +85,24 @@ export default {
     getCardInfo(name = '') {
       let pageName=this.pageName
       getCard({
+        phone:this.$store.state.user.user.phone,
         name,
         pageName
       }).then(({data:res}) => {
         //上面是使用es6的解构赋值为res
         console.log(res,'res')
-        this.cardData=res.list
+        this.cardData = res.data.list.map(item => {
+          //映射
+          item.manager=item.manager.name
+          if(item.state===0){
+            item.stateName='编写中'
+          }else if(item.state===1){
+            item.stateName='审核中'
+          }else if(item.state===2){
+            item.stateName='已发布'
+          }
+          return item
+        })
       });
     },
 
@@ -103,7 +115,7 @@ export default {
       console.log(index, row);
     },
 
-    checkSta(index){
+    checkSta(item){
       // console.log('Join:check index:'+index)
       // let pageName=this.pageName
       // getStanInfo({
@@ -118,19 +130,29 @@ export default {
       //   console.log('添加 standard:'+this.$store.state.standard.standard.name)
       // });
       // this.$router.push({name: 'check'})
-      console.log('Join:check index:'+index)
+      console.log('Join:check index:'+item.id)
       let pageName=this.pageName
-      this.$store.commit('setStanId',{stanId:index,stanPage:pageName})
+      this.$store.commit('setStanId',{stanId:item.id,stanPage:pageName})
       console.log('添加 stanId:'+this.$store.state.standard.stanId)
       this.$router.push({name: 'check'})
     },
 
-    editSta(index){
-      console.log('Join:edit index:'+index)
-      let pageName=this.pageName
-      this.$store.commit('setStanId',{stanId:index,stanPage:pageName})
-      console.log('添加 stanId:'+this.$store.state.standard.stanId)
-      this.$router.push({name: 'edit'})
+    editSta(item){
+      console.log('Join:edit index:'+item.id)
+      if(item.state===0){
+        let pageName=this.pageName
+        this.$store.commit('setStanId',{stanId:item.id,stanPage:pageName})
+        console.log('添加 stanId:'+this.$store.state.standard.stanId)
+        this.$router.push({name: 'edit'})
+      }else {
+        this.$confirm("该数据标准当前处于" + item.stateName + "状态，无法编写！", "提示", {
+          confirmButtonText: "确认",
+          cancelButtonText: "取消",
+          type: "warning"
+        }).then(() => {
+          this.getCardInfo()
+        })
+      }
     },
   },
   mounted() {
@@ -155,6 +177,8 @@ export default {
 <style lang="less" scoped>
 .join {
   background-color: white;
+  min-height: 100% !important;
+  width: 100%;
 
   .search {
     //padding: 40px 0 20px 0;

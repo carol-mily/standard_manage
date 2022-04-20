@@ -16,9 +16,9 @@
       </common-form>
     </div>
     <div class="show">
-      <el-aside class="aside">
-        <common-aside class="common-aside" :menu="level" aside-name="primary"></common-aside>
-      </el-aside>
+      <div class="aside">
+        <common-aside class="common-aside" :menu="this.$store.state.level.level" aside-name="home" @chooseTable="chooseMenu"></common-aside>
+      </div>
       <div class="table">
         <common-table
             :table-data="tableData"
@@ -36,10 +36,11 @@
 </template>
 
 <script>
-import {getHomeList} from '../../api/data'
+import {getTotal} from '../../api/data'
 import CommonForm from "@/components/CommonForm";
 import CommonAside from "@/components/CommonAside";
 import CommonTable from "@/components/CommonTable";
+import Level from "../../util/level";
 
 
 export default {
@@ -68,73 +69,91 @@ export default {
       tableData: [],
       tableLabel: [
         {
-          //数据中读取的字段的名称
-          prop: "id",
           //列的名称
           label: "序号",
-          width:"100px"
+          width: "100px"
         },
         {
           //数据中读取的字段的名称
           prop: "name",
           //列的名称
           label: "名称",
-          width:"300px"
+          width: "300px"
+        },
+        {
+          //数据中读取的字段的名称
+          prop: "levelName",
+          //列的名称
+          label: "分级",
+          width: "250px"
         },
         {
           //数据中读取的字段的名称
           prop: "subDay",
           //列的名称
           label: "发布时间",
-          width: "300px"
+          width: "200px"
         },
         {
           //数据中读取的字段的名称
           prop: "manager",
           //列的名称
           label: "负责人",
-          width: "300px"
+          width: "150px"
         },
       ],
       //默认页数值
       config: {
         pager: 1,
-        total: 30
+        total: 30,
+        pageSize:10,
       },
-      pageName:'home',
-      level:[]
+      chooseLevel:{ //选择的分级
+        level:1,
+        levelId:[0,-1,-1]
+      },
+      pageName: 'home',
     }
   },
   methods: {
     getList(name = '') {
       this.config.loading = true
       name ? (this.config.pager = 1) : ''
-      getHomeList({
+      getTotal({
+        pageName:this.pageName,
+        phone:this.$store.state.user.user.phone,
         page: this.config.pager,
-        name
-      }).then(({data:res}) => {
+        name: this.searchForm.keyword,
+        level:this.chooseLevel.level,
+        levelId: this.chooseLevel.levelId[this.chooseLevel.level-1]
+      }).then(({data: res}) => {
         //上面是使用es6的解构赋值为res
-        console.log(res,'res')
-        this.tableData=res.list
-        this.config.total=res.count
-        this.config.loading=false
-        this.level=res.level
+        console.log(res, 'res')
+        this.tableData = res.data.list.map(item => {
+          //映射
+          item.manager=item.manager.name
+          item.levelName=Level.getLevelName(this.$store.state.level.level,item.level1,item.level2,item.level3)
+          return item
+        })
+        this.config.total = res.data.count
+        this.config.loading = false
       });
     },
 
-    changeList(page){
+    changeList(page) {
       this.config.loading = true
-     this.config.pager=page
-      getHomeList({
-        page: this.config.pager,
-        name:this.searchForm.keyword
-      }).then(({data:res}) => {
-        //上面是使用es6的解构赋值为res
-        console.log(res,'res')
-        this.tableData=res.list
-        this.config.total=res.count
-        this.config.loading=false
-      });
+      this.config.pager = page
+     this.getList()
+      // getHomeList({
+      //   page: this.config.pager,
+      //   name: this.searchForm.keyword
+      // }).then(({data: res}) => {
+      //   //上面是使用es6的解构赋值为res
+      //   console.log(res, 'res')
+      //   this.tableData = res.list
+      //   this.config.total = res.count
+      //   this.config.loading = false
+      // });
     },
 
     // handleSelectionChange(val) {
@@ -147,21 +166,28 @@ export default {
       console.log(index, row);
     },
 
-    checkHome(row){
-      console.log('Join:edit index:'+row.id)
-      let pageName=this.pageName
-      this.$store.commit('setStanId',{stanId:row.id,stanPage:pageName})
-      console.log('添加 stanId:'+this.$store.state.stanId)
+    checkHome(row) {
+      console.log('Join:edit index:' + row.id)
+      let pageName = this.pageName
+      this.$store.commit('setStanId', {stanId: row.id, stanPage: pageName})
+      console.log('添加 stanId:' + this.$store.state.stanId)
       this.$router.push({name: 'check'})
     },
 
-    loadHome(row){
-      console.log('load:'+row.id)
+    loadHome(row) {
+      console.log('load:' + row.id)
       alert('下载中……')
+    },
+
+    //切换菜单
+    chooseMenu(item){
+      this.chooseLevel.level=item.level
+      this.chooseLevel.levelId[item.level-1]=item.id
+      this.getList()
     }
   },
 
-  computed:{},
+  computed: {},
 
   mounted() {
     // getData().then(res => {
@@ -175,7 +201,7 @@ export default {
     // })
   },
   //生命周期
-  created(){
+  created() {
     //在页面加载时就需要调用
     this.getList()
   }
@@ -188,34 +214,51 @@ export default {
   height: 100%;
   width: 100%;
   padding: 0;
+  margin: 0;
 
-  .search {
-    padding: 10px 0 10px 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    .searchForm {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-  }
-}
-.show{
-  display: flex;
-  padding: 0;
-  .aside {
-    width: 250px !important;
-    text-align: center;
-    height: 100% !important;
+  .search{
     padding: 0;
-    .common-aside{
-      height: 100%;
+    height: 50px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    .searchForm {
+      justify-content: center;
+      margin: 0 30% 0 30%;
+      display: flex;
+      height: 40px;
+      width: 40%;
     }
   }
-  .table{
-    height: 500px;
+
+  .show {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: calc(100% - 50px);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .aside {
+      width: 250px;
+      text-align: left;
+      height: 100%;
+      padding: 0;
+
+      .common-aside{
+        width: 100%;
+        height: 100%;
+      }
+    }
+
+    .table {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: calc(100% - 250px);
+    }
   }
 }
 </style>

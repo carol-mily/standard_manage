@@ -20,10 +20,11 @@ html,body{
   padding: 0;
 }
 #app {
+  position : absolute;
   height: 100vh;
   position: fixed;
   display: flex;
-  min-width: 100%;
+  width: 100%;
   background-color: #F7F8F9;
 }
 </style>

@@ -53,7 +53,8 @@
 <script>
 //使用mock模拟token
 // import Mock from 'mockjs'
-import {getMenu} from '../../api/data'
+import {logIn} from '../../api/data'
+import Level from '../../util/level'
 export default {
   name: "index",
 
@@ -128,7 +129,7 @@ export default {
       //   this.$message.warning("请输入正确的手机号和密码")
       // }
       else{
-        getMenu(this.form).then(({data:res})=>{
+        logIn(this.form).then(({data:res})=>{
           if(res.code === 20000){
             console.log(res)
             this.$store.commit('clearMenu')
@@ -146,9 +147,12 @@ export default {
             this.$store.commit('addRoutes',this.$router)
 
             //对主页左侧分级的操作
-            // this.$store.commit('clearLevel')
-            // this.$store.commit('setLevel',res.data.level)
-            // this.$store.commit('addLevel',this.$router)
+            this.$store.commit('clearLevel')
+            let level=Level.handleLevel(res.data.level)
+            this.$store.commit('setLevel',level)
+            this.$store.commit('addLevel',this.$router)
+            console.log('login: level is')
+            console.log(res.data.level)
 
             //添加用户信息
             this.$store.commit('clearUser')
@@ -172,6 +176,14 @@ export default {
             this.$store.commit('clearRoutes')
             this.$store.commit('setRoutes',res.data.routes)
             this.$store.commit('addRoutes',this.$router)
+
+            //对主页左侧分级的操作
+            this.$store.commit('clearLevel')
+            let level=Level.handleLevel(res.data.level)
+            this.$store.commit('setLevel',level)
+            this.$store.commit('addLevel',this.$router)
+            console.log('login: level is')
+            console.log(res.data.level)
 
             //添加用户信息
             this.$store.commit('clearUser')

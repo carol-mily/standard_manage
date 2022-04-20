@@ -60,7 +60,7 @@
 </template>
 
 <script>
-import {getForget} from "../../api/data";
+import {changePassword} from "../../api/data";
 
 export default {
   name: "index",
@@ -132,7 +132,7 @@ export default {
       else if(this.form.password!==this.form.password2){
         this.$message.warning("两次密码不相同！")
       }else {
-        getForget(this.form).then(({data:res})=>{
+        changePassword(this.form).then(({data:res})=>{
           if(res.code === 20000){
             console.log(res)
             this.$message.success("修改密码成功！")
