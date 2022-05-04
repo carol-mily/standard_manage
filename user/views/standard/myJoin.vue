@@ -9,10 +9,8 @@
           ref="form">
         <el-button type="primary"
                    plain
-                   @click="getCardInfo(searchForm.keyword)"
-                   style="height: 38px"
-        >搜索
-        </el-button>
+                   @click="load"
+                   style="height: 38px">搜索</el-button>
       </common-form>
     </el-header>
     <el-main class="show">
@@ -26,7 +24,6 @@
 </template>
 
 <script>
-import {getCard} from '../../api/data'
 import CommonForm from "@/components/CommonForm";
 import CommonCard from "@/components/CommonCard";
 
@@ -53,83 +50,36 @@ export default {
       searchForm: {
         keyword: ''
       },
-      cardData: [
-        // {
-        //   id: 1,
-        //   name: '数据标准1',
-        //   manager: '负责人1',
-        //   creDay: '2022-01-01'
-        // },
-        // {
-        //   id: 2,
-        //   name: '数据标准2',
-        //   manager: '负责人2',
-        //   creDay: '2022-01-02'
-        // },
-        // {
-        //   id: 3,
-        //   name: '数据标准3',
-        //   manager: '负责人3',
-        //   creDay: '2022-01-03'
-        // },
-        // {
-        //   id: 4,
-        //   name: '数据标准4',
-        //   manager: '负责人4',
-        //   creDay: '2022-01-04'
-        // },
-      ],
+      cardData: [],
     }
   },
   methods: {
-    getCardInfo(name = '') {
-      let pageName=this.pageName
-      getCard({
-        phone:this.$store.state.user.user.phone,
-        name,
-        pageName
-      }).then(({data:res}) => {
-        //上面是使用es6的解构赋值为res
+    load(){
+      this.request.get("/standard/findByUphone",{params:{
+          uphone:this.$store.state.user.user.phone,
+          name:this.searchForm.keyword
+        }
+      }).then(res=>{
+        console.log("function：/standard/findByUphone")
         console.log(res,'res')
-        this.cardData = res.data.list.map(item => {
-          //映射
-          item.manager=item.manager.name
-          if(item.state===0){
-            item.stateName='编写中'
-          }else if(item.state===1){
-            item.stateName='审核中'
-          }else if(item.state===2){
-            item.stateName='已发布'
-          }
-          return item
-        })
-      });
-    },
-
-    check(index, row) {
-      console.log('用吗？')
-      console.log(index, row);
-    },
-    edit(index, row) {
-      console.log('用吗？')
-      console.log(index, row);
+        if(res.code==='200'){
+          this.cardData=res.data.map(item=>{
+            if(item.state===0){
+              item.stateName='编写中'
+            }else if(item.state===1){
+              item.stateName='审核中'
+            }else if(item.state===2){
+              item.stateName='已发布'
+            }
+            return item
+          })
+        }else{
+          this.$message.error(res.message)
+        }
+      })
     },
 
     checkSta(item){
-      // console.log('Join:check index:'+index)
-      // let pageName=this.pageName
-      // getStanInfo({
-      //   stanId:index,
-      //   pageName
-      // }).then(({data:res}) => {
-      //   //上面是使用es6的解构赋值为res
-      //   console.log(res,'res')
-      //   this.$store.commit('clearStandard')
-      //   console.log('清理 standard:'+this.$store.state.standard.standard.name)
-      //   this.$store.commit('setStandard',res.list[0])
-      //   console.log('添加 standard:'+this.$store.state.standard.standard.name)
-      // });
-      // this.$router.push({name: 'check'})
       console.log('Join:check index:'+item.id)
       let pageName=this.pageName
       this.$store.commit('setStanId',{stanId:item.id,stanPage:pageName})
@@ -150,26 +100,17 @@ export default {
           cancelButtonText: "取消",
           type: "warning"
         }).then(() => {
-          this.getCardInfo()
+          this.load()
         })
       }
     },
   },
-  mounted() {
-    // getData().then(res => {
-    //   //解析获得所需数据
-    //   const {code, data} = res.data
-    //   if (code === 20000) {
-    //     //请求成功，赋值到tableData
-    //     this.tableData = data.tableData
-    //   }
-    //   console.log(res)
-    // })
-  },
+  mounted() {},
+
   //生命周期
   created(){
     //在页面加载时就需要调用
-    this.getCardInfo()
+    this.load()
   }
 }
 </script>
@@ -181,32 +122,21 @@ export default {
   width: 100%;
 
   .search {
-    //padding: 40px 0 20px 0;
-    //display: flex;
-    //align-items: center;
-    //justify-content: center;
-    //position: absolute;
-    //background-color: white;
-    //width: 95%;
-    //.searchForm {
-    //  display: flex;
-    //  align-items: center;
-    //  justify-content: center;
-    //}
     padding: 0;
     position: absolute;
-    background-color:white;
     width: 97%;
     display: flex;
     height: 100%;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
     .searchForm {
+      padding: 10px 0 0 0;
+      margin: 10px 0 0 0;
+      display: inline-block;
       justify-content: center;
-      margin: 10px 0 10px 430px;
-      display: flex;
-      height: 40px;
-      width: 600px;
+      align-items: center;
+      height: 100%;
+      width: auto;
     }
   }
   .show{

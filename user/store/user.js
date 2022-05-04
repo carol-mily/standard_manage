@@ -31,6 +31,6 @@ export default {
 
         clearUser(state){
             state.user= {}
-        }
+        },
     }
 }

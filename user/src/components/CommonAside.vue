@@ -2,7 +2,7 @@
   <aside>
     <el-col :span="24">
       <el-menu
-          default-active="1-0-0"
+          :default-active="defaultAct"
           class="el-menu-vertical-demo"
           @open="handleOpen"
           @close="handleClose"
@@ -12,12 +12,21 @@
           :unique-opened="true">
         <!-- home和total 其唯一标识为value-->
         <div v-if="asideName==='home'||asideName==='total'" class="state1">
+          <!--        添加表的操作-->
+          <el-menu-item
+              :key="'全部'"
+              :index="'全部'"
+              @click="getAll">
+            <template slot="title">
+              <span slot="title" style="font-size: 17px">全部</span>
+            </template>
+          </el-menu-item>
           <template  v-for="item1 in menu">
           <!--循环读取无子菜单的item1-->
           <el-menu-item
               v-if="!item1.children"
-              :index="item1.value"
-              :key="item1.value"
+              :index="item1.id.toString()"
+              :key="item1.id.toString()"
               @click="clickMenu(item1)">
             <template slot="title">
 <!--              <i class='el-icon-my-menu1'></i>-->
@@ -28,21 +37,21 @@
           <!--循环读取有子菜单的item1-->
           <el-submenu
               v-if="item1.children"
-              :index="item1.value"
-              :key="item1.value"
+              :index="item1.id.toString()"
+              :key="item1.id.toString()"
               @click="clickMenu(item1)">
             <template slot="title">
 <!--              <i class='el-icon-my-menu1'></i>-->
               <span slot="title" style="font-size: 17px">{{ item1.name }}</span>
             </template>
             <!--二级菜单渲染-->
-            <el-menu-item-group v-for="item2 in item1.children" :key="item2.value" :unique-opened="true">
+            <el-menu-item-group v-for="item2 in item1.children" :key="item2.id" :unique-opened="true">
               <!--循环读取无子菜单的item2-->
               <el-menu-item
                   v-if="!item2.children"
                   @click="clickMenu(item2)"
-                  :index="item2.value"
-                  :key="item2.value">
+                  :index="item2.id.toString()"
+                  :key="item2.id.toString()">
                 <template slot="title">
 <!--                  <i class='el-icon-my-menu2'></i>-->
                   <span slot="title" style="font-size: 15px">{{ item2.name }}</span>
@@ -52,20 +61,20 @@
               <!--循环读取有子菜单的item2-->
               <el-submenu
                   v-if="item2.children"
-                  :index="item2.value"
-                  :key="item2.value"
+                  :index="item2.id.toString()"
+                  :key="item2.id.toString()"
                   @click="clickMenu(item2)">
                 <template slot="title">
 <!--                  <i class='el-icon-my-menu2'></i>-->
                   <span slot="title" style="font-size: 15px">{{ item2.name }}</span>
                 </template>
                 <!--三级菜单渲染-->
-                <el-menu-item-group v-for="item3 in item2.children" :key="item3.value">
+                <el-menu-item-group v-for="item3 in item2.children" :key="item3.id">
                   <!--循环读取有子菜单的item3-->
                   <el-menu-item
                       @click="clickMenu(item3)"
-                      :index="item3.value"
-                      :key="item3.value">
+                      :index="item3.id.toString()"
+                      :key="item3.id.toString()">
                     <template slot="title">
 <!--                      <i class='el-icon-my-menu3'></i>-->
                       <span slot="title" style="font-size: 14px">{{ item3.name }}</span>
@@ -112,8 +121,8 @@
         <!--        添加表的操作-->
         <el-menu-item
             v-if="asideName==='edit'"
-            :key="menu.length.toString()"
-            :index="menu.length.toString()"
+            :key="'添加'"
+            :index="'添加'"
             @click="addMenu"
             style="font-size: 17px ;display:flex;align-content: center;justify-content: center; padding: 0">
           <template slot="title">
@@ -132,6 +141,7 @@ export default {
   name: "CommonAside",
   data() {
     return {
+      defaultAct:'全部',
       editImg: require('../../src/assets/icon/edit.png'),
     }
   },
@@ -149,6 +159,9 @@ export default {
     handleClose(key, keyPath) {
       console.log(key, keyPath);
     },
+    getAll(){
+      this.$emit('getAll')
+    },
     clickMenu(item) {
       console.log(item)
       this.$emit('chooseTable', item)
@@ -164,15 +177,30 @@ export default {
     },
     addMenu() {
       this.$emit('addTable')
-    }
+    },
   },
 
-  // computed: {
-  //   //动态获取菜单
-  //   asyncLevel(){
-  //     return this.$store.state.level.level
-  //   }
-  // }
+  watch: {
+    'menu': function(){
+      if(this.asideName==='home'||this.asideName==='total'){
+        this.defaultAct='全部'
+      }else if(this.asideName==='message'){
+        this.defaultAct='未读'
+      }else{
+        this.defaultAct=this.menu.length===0?'':this.menu[0].id.toString()
+      }
+    },
+  },
+
+  created() {
+    if(this.asideName==='home'||this.asideName==='total'){
+      this.defaultAct='全部'
+    }else if(this.asideName==='message'){
+      this.defaultAct='未读'
+    }else{
+      this.defaultAct=this.menu.length===0?'':this.menu[0].id.toString()
+    }
+  }
 }
 </script>
 

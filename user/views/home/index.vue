@@ -9,7 +9,7 @@
           ref="form">
         <el-button type="primary"
                    plain
-                   @click="getList(searchForm.keyword)"
+                   @click="searchStan"
                    style="height: 38px"
         >搜索
         </el-button>
@@ -17,7 +17,11 @@
     </div>
     <div class="show">
       <div class="aside">
-        <common-aside class="common-aside" :menu="this.$store.state.level.level" aside-name="home" @chooseTable="chooseMenu"></common-aside>
+        <common-aside class="common-aside"
+                      :menu="level"
+                      aside-name="home"
+                      @chooseTable="chooseMenu"
+                      @getAll="getAll"></common-aside>
       </div>
       <div class="table">
         <common-table
@@ -36,7 +40,6 @@
 </template>
 
 <script>
-import {getTotal} from '../../api/data'
 import CommonForm from "@/components/CommonForm";
 import CommonAside from "@/components/CommonAside";
 import CommonTable from "@/components/CommonTable";
@@ -55,6 +58,7 @@ export default {
   data() {
     return {
       userImg: require('../../src/assets/images/logo.png'),
+      level:[], //左菜单分级
       formLabel: [
         {
           model: "keyword",
@@ -66,12 +70,13 @@ export default {
       searchForm: {
         keyword: ''
       },
+      searchName:'',
       tableData: [],
       tableLabel: [
         {
           //列的名称
           label: "序号",
-          width: "100px"
+          width: "50px"
         },
         {
           //数据中读取的字段的名称
@@ -85,18 +90,18 @@ export default {
           prop: "levelName",
           //列的名称
           label: "分级",
-          width: "250px"
+          width: "200px"
         },
         {
           //数据中读取的字段的名称
-          prop: "subDay",
+          prop: "subday",
           //列的名称
           label: "发布时间",
           width: "200px"
         },
         {
           //数据中读取的字段的名称
-          prop: "manager",
+          prop: "mname",
           //列的名称
           label: "负责人",
           width: "150px"
@@ -106,59 +111,85 @@ export default {
       config: {
         pager: 1,
         total: 30,
-        pageSize:10,
+        pageSize:9,
       },
-      chooseLevel:{ //选择的分级
-        level:1,
-        levelId:[0,-1,-1]
-      },
+      chooseLevel: null,
       pageName: 'home',
     }
   },
   methods: {
-    getList(name = '') {
-      this.config.loading = true
-      name ? (this.config.pager = 1) : ''
-      getTotal({
-        pageName:this.pageName,
-        phone:this.$store.state.user.user.phone,
-        page: this.config.pager,
-        name: this.searchForm.keyword,
-        level:this.chooseLevel.level,
-        levelId: this.chooseLevel.levelId[this.chooseLevel.level-1]
-      }).then(({data: res}) => {
-        //上面是使用es6的解构赋值为res
+    load() {
+      this.loadLevel()
+      this.loadType()
+      this.getList()
+    },
+
+    loadLevel() {
+      this.request.get("/level/findAll").then(res => {
+        console.log("function:/level/findAll")
         console.log(res, 'res')
-        this.tableData = res.data.list.map(item => {
-          //映射
-          item.manager=item.manager.name
-          item.levelName=Level.getLevelName(this.$store.state.level.level,item.level1,item.level2,item.level3)
-          return item
-        })
-        this.config.total = res.data.count
-        this.config.loading = false
-      });
+        if (res.code === '200') {
+          this.level = res.data
+          //处理多余的children
+          this.level = Level.cleanChildren(this.level)
+          //level存入store中以供form使用
+          this.$store.state.level.level = this.level
+        } else {
+          this.$message.error(res.message)
+        }
+      })
+    },
+
+    loadType(){
+      this.request.get("/type/findAll").then(res=>{
+        console.log("function：/type/findAll")
+        console.log(res,'res')
+        if(res.code==='200'){
+          this.$store.state.typeList.typeList=res.data
+        }else{
+          this.$message.error(res.message)
+        }
+      })
+    },
+
+    getList() {
+      this.config.loading = true
+      this.request.get("/standard/getPage", {
+        params: {
+          pageNum: this.config.pager,
+          pageSize: this.config.pageSize,
+          levelid: this.chooseLevel,
+          name: this.searchName,
+          state:2 //代表所有的数据标准
+        }
+      }).then(res => {
+        console.log("function:/standard/getPage")
+        console.log(res, 'res')
+        if (res.code === '200') {
+          this.tableData = res.data.records.map(item=>{
+            item.levelName=Level.getLevelName(this.level,item.levelList)
+            return item;
+          })
+          this.config.total = res.data.total
+          this.config.loading = false
+        }else{
+          this.$message.error(res.message)
+        }
+      })
     },
 
     changeList(page) {
       this.config.loading = true
       this.config.pager = page
-     this.getList()
-      // getHomeList({
-      //   page: this.config.pager,
-      //   name: this.searchForm.keyword
-      // }).then(({data: res}) => {
-      //   //上面是使用es6的解构赋值为res
-      //   console.log(res, 'res')
-      //   this.tableData = res.list
-      //   this.config.total = res.count
-      //   this.config.loading = false
-      // });
+      this.load()
     },
 
-    // handleSelectionChange(val) {
-    //   this.multipleSelection = val;
-    // },
+    searchStan() {
+      this.searchName = this.searchForm.keyword
+      this.config.pager = 1
+      this.load()
+    },
+
     handleEdit(index, row) {
       console.log(index, row);
     },
@@ -175,35 +206,39 @@ export default {
     },
 
     loadHome(row) {
-      console.log('load:' + row.id)
-      alert('下载中……')
+      if(this.$store.state.user.user.phone!==undefined){
+        console.log('function:standard/export')
+        window.open("http://localhost:9090/standard/export/"+row.id)
+      }else{
+        this.$confirm("请登录以获得更多权限", "提示", {
+          confirmButtonText: "确认",
+          cancelButtonText: "取消",
+          type: "warning"
+        }).then(() => {
+          this.load()
+        })
+      }
     },
 
     //切换菜单
     chooseMenu(item){
-      this.chooseLevel.level=item.level
-      this.chooseLevel.levelId[item.level-1]=item.id
-      this.getList()
+      this.chooseLevel = item.id
+      this.load()
+    },
+
+    getAll(){
+      this.chooseLevel = null
+      this.load()
     }
   },
 
   computed: {},
 
-  mounted() {
-    // getData().then(res => {
-    //   //解析获得所需数据
-    //   const {code, data} = res.data
-    //   if (code === 20000) {
-    //     //请求成功，赋值到tableData
-    //     this.tableData = data.tableData
-    //   }
-    //   console.log(res)
-    // })
-  },
+  mounted() {},
   //生命周期
   created() {
     //在页面加载时就需要调用
-    this.getList()
+    this.load()
   }
 }
 </script>
@@ -224,11 +259,12 @@ export default {
     justify-content: center;
     align-items: center;
     .searchForm {
+      padding: 10px 0 0 0;
+      display: inline-block;
       justify-content: center;
-      margin: 0 30% 0 30%;
-      display: flex;
-      height: 40px;
-      width: 40%;
+      align-items: center;
+      height: 100%;
+      width: auto;
     }
   }
 

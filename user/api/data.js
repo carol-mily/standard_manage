@@ -225,9 +225,18 @@ export const changePassword = (params) => {
     })
 }
 
+//原
+// export const getUser4Name = (params) => {
+//     return axios.request({
+//         url: '/user/getUser4Name',
+//         method: 'get',
+//         data:params
+//     })
+// }
+
 export const getUser4Name = (params) => {
     return axios.request({
-        url: '/user/getUser4Name',
+        url: "http://localhost:9090/user/page",
         method: 'get',
         data:params
     })

@@ -12,6 +12,7 @@
             :form-label="changeManagerLabel"
             :form="operateForm"
             :inline="true"
+            :rules="phoneRules"
             ref="form"></common-form>
       </div>
       <div class="main" v-if="operateType==='changeEditors'">
@@ -20,6 +21,7 @@
             :form-label="changeEditorsLabel"
             :form="operateForm"
             :inline="true"
+            :rules="phoneRules"
             ref="form"
             style="margin-left: 90px;margin-right: 50px;"
             @addUser="addUser"></common-form>
@@ -35,6 +37,8 @@
         <common-form
             :form-label="stateFormLabel"
             :form="stateForm"
+            :rules="stateRules"
+            ref="form"
             class="form">
         </common-form>
       </div>
@@ -64,14 +68,16 @@
             v-if="this.formName==='edit'"
             :form-label="editFormLabel"
             :form="formData"
+            :rules="infoRules"
+            ref="form"
             class="form"
             @changeManager="changeManager"
             @changeEditors="changeEditors"
             @changeState="changeState">
           <el-button v-if="this.formName==='edit'"
-                     style="display: flex;justify-content: center;align-items: center"
-                     @click="editStan">修改
-          </el-button>
+                     type="primary"
+                     style="text-align: center"
+                     @click="editStan">修改</el-button>
         </common-form>
       </el-main>
     </el-container>
@@ -82,8 +88,8 @@
 import CommonAside from "@/components/CommonAside";
 import CommonForm from "@/components/CommonForm";
 import CommonTable from "@/components/CommonTable";
-import {deleteStan, editStan, editStanState, getStanInfo, sendMessage} from "../../api/data";
 import Level from "../../util/level";
+import Text from "../../util/text";
 
 export default {
   name: "manage",
@@ -130,7 +136,7 @@ export default {
           disabled: true
         },
         {
-          model: 'managerName',
+          model: 'mname',
           label: "负责人",
           type: "input",
           style: "width:400px;",
@@ -144,7 +150,7 @@ export default {
           disabled: true
         },
         {
-          model: 'level',
+          model: 'levelList',
           label: '分级',
           type: 'cascader',
           style: "width:400px;",
@@ -152,7 +158,7 @@ export default {
           disabled: true
         },
         {
-          model: 'creDay',
+          model: 'creday',
           label: "创建日期",
           type: "date",
           style: "width:400px;",
@@ -187,7 +193,7 @@ export default {
           style: "width:400px;",
         },
         {
-          model: 'managerName',
+          model: 'mname',
           label: "负责人",
           type: "changeManager",
           style: "width:400px;",
@@ -200,7 +206,7 @@ export default {
           hasButton: true,
         },
         {
-          model: 'level',
+          model: 'levelList',
           label: '分级',
           type: 'cascader',
           style: "width:400px;",
@@ -221,6 +227,39 @@ export default {
         },
       ],
       formData: {},
+      infoRules: {
+        name:[
+          {
+            required: true, //必填
+            message: "请输入名称", //校验不通过的提示信息
+            trigger: "blur"  //触法方式
+          },
+          {
+            min:1,
+            max:20,
+            message:"名称长度应在20个字符以内",
+            trigger: "blur"
+          },
+        ],
+        ename:[
+          {
+            required: true, //必填
+            message: "请输入英文名称", //校验不通过的提示信息
+            trigger: "blur"  //触法方式
+          },
+          {
+            min:1,
+            max:20,
+            message:"英文名称长度应在20个字符以内",
+            trigger: "blur"
+          },
+        ],
+        description:{
+          max:200,
+          message:"描述长度应在200个字符以内",
+          trigger: "blur"
+        }
+      },
       //编写者列表
       editorsTable: [
         {
@@ -266,6 +305,22 @@ export default {
         phone: ''
       },
       isShow: false,
+      phoneRules:{
+        phone: [
+          {
+            required: true, //必填
+            message: "请输入手机号码", //校验不通过的提示信息
+            trigger: "blur"  //触法方式
+          },
+          {
+            pattern: '^[1](([3][0-9])|([4][5-9])|([5][0-3,5-9])|([6][5,6])|([7][0-8])|([8][0-9])|([9][1,8,9]))[0-9]{8}$',
+            min:11,  //最小长度\
+            max:11,
+            message: "手机号格式错误",
+            trigger: "blur"
+          }
+        ],
+      },
       //审核
       stateFormLabel: [
         {
@@ -285,41 +340,42 @@ export default {
         result: '通过',
         suggestion: ''
       },
-      pageName: 'manage'
+      stateRules:{
+        suggestion: {
+            max:200,
+            message: "审核意见应在200个字符以内",
+            trigger: "blur"
+          }
+      },
+      pageName: 'manage',
+      validInfo:{ //检验form内信息是否通过校验
+        value:0,
+        message:''
+      },
     }
   },
 
   methods: {
-    //得到完整数据结构信息
-    getCardInfo() {
-      getStanInfo({
-        stanId: this.$store.state.standard.stanId,
-        pageName: this.$store.state.standard.stanPage
-      }).then(({data: res}) => {
-        //上面是使用es6的解构赋值为res
+    load() {
+      this.request.get("/standard/findById/" + this.$store.state.standard.stanId).then(res => {
+        console.log("function：/standard/findById")
         console.log(res, 'res')
-        this.editorsData = res.data.list.editors   //编写者列表
-        let editor = ''
-        for (let i = 0; i < res.data.list.editors.length; i++) {
-          editor = editor + res.data.list.editors[i].name + ' '
-        }
-        //设置全局变量
-        // this.$store.commit('clearStandard')
-        // this.$store.commit('setStandard',res.list[0])
-        // this.cardData=this.asyncStan
-        this.formData = res.data.list
-        this.formData.managerName = res.data.list.manager.name
-        this.formData.editorsName = editor
-        this.formData.level = Level.getLevelList(this.$store.state.level.level, res.data.list.level1, res.data.list.level2, res.data.list.level3)
-        if (this.formData.state === 2) {
-          this.formData.stateName = '已发布'
-        } else if (this.formData.state === 1) {
-          this.formData.stateName = '审核中'
+        if (res.code === '200') {
+          this.formData = res.data
+          this.formData.levelName = Level.getLevelName(this.$store.state.level.level, this.formData.levelList)
+          if (this.formData.state === 2) {
+            this.formData.stateName = '已发布'
+          } else if (this.formData.state === 1) {
+            this.formData.stateName = '审核中'
+          } else {
+            this.formData.stateName = '编写中'
+          }
+          this.formData.editorsName = Text.textFromArray(this.formData.editors)
+          this.editorsData = this.formData.editors
         } else {
-          this.formData.stateName = '编写中'
+          this.$message.error(res.message)
         }
-        this.itemData = res.data.list.table[0].item
-      });
+      })
     },
 
     //换表
@@ -327,7 +383,7 @@ export default {
       console.log('item:' + item.id)
       if (item.id === 0) {
         this.formName = 'check'
-        this.getCardInfo()
+        this.load()
       } else if (item.id === 1) {
         this.formName = 'edit'
       } else if (item.id === 2) {
@@ -345,209 +401,262 @@ export default {
     //换负责人
     changeManager() {
       this.operateType = 'changeManager'
+      this.operateForm.phone=''
       this.isShow = true
     },
 
     //换编写者
     changeEditors() {
       this.operateType = 'changeEditors'
+      this.operateForm.phone=''
       this.isShow = true
     },
 
     //换状态
     changeState(changeType) {
-      let receiverPhone = this.formData.editors.map((item) => {
-        return item.phone;
-      })
-      if (changeType === 0) { //审核
-        this.operateType = 'changeState'
-        this.isShow = true
-      } else {  //撤销发布
-        //通知，这里使用的是element-ui中MessageBox的confirm方法，因此需要在main.js中进行绑定
-        this.$confirm("此操作将撤销发布状态，是否继续？", "提示", {
-          confirmButtonText: "确认",
-          cancelButtonText: "取消",
-          type: "warning"
-        }).then(() => {
-          editStanState({
-            stanId: this.$store.state.standard.stanId,
-            state: 0
+      this.$refs.form.isValid(this.validInfo) //调用form中的函数
+      if (this.validInfo.value === 0) { //校验不通过
+        this.$message.warning(this.validInfo.message)
+      } else {
+        let receiverPhone = this.formData.editors.map((item) => {
+          return item.phone;
+        })
+        if (changeType === 0) { //审核
+          this.operateType = 'changeState'
+          this.isShow = true
+        } else {  //撤销发布
+          //通知，这里使用的是element-ui中MessageBox的confirm方法，因此需要在main.js中进行绑定
+          this.$confirm("此操作将撤销发布状态，是否继续？", "提示", {
+            confirmButtonText: "确认",
+            cancelButtonText: "取消",
+            type: "warning"
           }).then(() => {
-            sendMessage({
-              title: '项目 ' + this.formData.name + ' 撤销发布',
-              type: 2, //0表示系统消息，1表示项目消息(需要确认的)，2表示项目消息(不需要确认的)
-              senderPhone: this.$store.state.user.user.phone,
-              receiverPhone: receiverPhone,
-              subDay: this.subDay,
-              text: '项目名称：' + this.formData.name + '\n负责人：' + this.$store.state.user.user.name + '(手机号' + this.$store.state.user.user.phone + ')\n项目已撤销发布，可以进行编写！',
-            }).then(() => {
-              //同$confirm类似
-              this.$message({
-                type: "success",
-                message: "已发送信息！"
-              })
-              //更新列表
-              this.isShow = false
-              this.getCardInfo()
+            this.request.post("/standard/changeState", {
+              stanId: this.$store.state.standard.stanId,
+              state: 0
+            }).then(res => {
+              console.log("function:/standard/changeState")
+              console.log(res, 'res')
+              if (res.code === '200') {
+                this.$message.success(res.message)
+                this.request.post("/message/sendProMsg", {
+                  title: '项目 ' + this.formData.name + ' 撤销发布',
+                  type: 1, //0表示系统消息,1代表项目消息
+                  subday: this.subDay,
+                  sphone: this.$store.state.user.user.phone,
+                  text: '项目名称：' + this.formData.name + '\n负责人：' + this.$store.state.user.user.name + '(手机号' + this.$store.state.user.user.phone + ')\n项目已撤销发布，可以进行编写！',
+                  stanId: this.formData.id,
+                  proType: 6,//项目消息类型：1添加，2转让，3申请，4审核，5删除，6撤销
+                  uphones: receiverPhone
+                }).then(res => {
+                  console.log("function:/message/sendProMsg")
+                  console.log(res, 'res')
+                  if (res.code === '200') {
+                    //更新列表
+                    this.isShow = false
+                    this.load()
+                  } else {
+                    this.$message.error(res.message)
+                  }
+                })
+              }
             })
           })
-        })
+        }
       }
     },
 
     //换负责人、审核
     changeConfirm() {
-      if (this.operateType === 'changeManager') { //转让负责人
-        if (this.operateForm.phone === '') {
-          this.$message.warning('输入手机号不能为空')
-        } else if (this.operateForm.phone === this.$store.state.user.user.phone) {
-          this.$message.warning('不得转让于自己')
-        } else {
-          sendMessage({
-            title: '项目 ' + this.formData.name + ' 转让负责人',
-            type: 1, //0表示系统消息，1表示项目消息(需要确认的)，2表示项目消息(不需要确认的)
-            senderPhone: this.$store.state.user.user.phone,
-            receiverPhone: [this.operateForm.phone],
-            subDay: this.subDay,
-            text: '项目名称：' + this.formData.name + '\n原负责人：' + this.$store.state.user.user.name + '(手机号' + this.$store.state.user.user.phone + ')\n邀请您成为负责人',
-          }).then(() => {
-            //同$confirm类似
-            this.$message({
-              type: "success",
-              message: "已发送信息！"
-            })
-            //更新列表
-            this.isShow = false
-          })
-        }
+      this.$refs.form.isValid(this.validInfo) //调用form中的函数
+      if (this.validInfo.value === 0) { //校验不通过
+        this.$message.warning(this.validInfo.message)
       } else {
-        let receiverPhone = this.formData.editors.map((item) => {
-          return item.phone;
-        })
-        if(this.stateForm.result==='不通过'){  //审核失败
-          editStanState({
-            stanId: this.$store.state.standard.stanId,
-            state: 0
-          }).then(() => {
-            sendMessage({
-              title: '项目 ' + this.formData.name + ' 审核',
-              type: 2, //0表示系统消息，1表示项目消息(需要确认的)，2表示项目消息(不需要确认的)
-              senderPhone: this.$store.state.user.user.phone,
-              receiverPhone: receiverPhone,
-              subDay: this.subDay,
-              text: '项目名称：' + this.formData.name + '\n负责人：' + this.$store.state.user.user.name + '(手机号' + this.$store.state.user.user.phone + ')\n项目审核失败，请继续编写！\n审核意见：'+this.stateForm.suggestion,
-            }).then(() => {
-              //同$confirm类似
-              this.$message({
-                type: "success",
-                message: "已发送信息！"
-              })
-              //更新列表
-              this.isShow = false
-              this.getCardInfo()
+        if (this.operateType === 'changeManager') { //转让负责人
+          if (this.operateForm.phone === '') {
+            this.$message.warning('输入手机号不能为空')
+          } else if (this.operateForm.phone === this.$store.state.user.user.phone) {
+            this.$message.warning('不得转让于自己')
+          } else {
+            this.request.post("/message/sendProMsg", {
+              title: '项目 ' + this.formData.name + ' 转让负责人',
+              type: 1, //0表示系统消息,1代表项目消息
+              subday: this.subDay,
+              sphone: this.$store.state.user.user.phone,
+              text: '项目名称：' + this.formData.name + '\n原负责人：' + this.$store.state.user.user.name + '(手机号' + this.$store.state.user.user.phone + ')\n邀请您成为负责人',
+              stanId: this.formData.id,
+              proType: 2,//项目消息类型：1添加，2转让，3申请，4审核，5删除
+              uphones: [this.operateForm.phone]
+            }).then(res => {
+              console.log("function:/message/sendProMsg")
+              console.log(res, 'res')
+              if (res.code === '200') {
+                this.$message.success(res.message)
+                //更新列表
+                this.isShow = false
+              } else {
+                this.$message.error(res.message)
+              }
             })
+          }
+        } else {
+          let receiverPhone = this.formData.editors.map((item) => { //得到接收人的手机号码
+            return item.phone;
           })
-        }else{
-          editStanState({
-            stanId: this.$store.state.standard.stanId,
-            state: 2
-          }).then(() => {
-            sendMessage({
-              title: '项目 ' + this.formData.name + ' 审核',
-              type: 2, //0表示系统消息，1表示项目消息(需要确认的)，2表示项目消息(不需要确认的)
-              senderPhone: this.$store.state.user.user.phone,
-              receiverPhone: receiverPhone,
-              subDay: this.subDay,
-              text: '项目名称：' + this.formData.name + '\n负责人：' + this.$store.state.user.user.name + '(手机号' + this.$store.state.user.user.phone + ')\n项目审核成功，已发布！\n审核意见：'+this.stateForm.suggestion,
-            }).then(() => {
-              //同$confirm类似
-              this.$message({
-                type: "success",
-                message: "已发送信息！"
-              })
-              //更新列表
-              this.isShow = false
-              this.getCardInfo()
+          if (this.stateForm.result === '不通过') {  //审核失败
+            this.request.post("/standard/changeState", {
+              stanId: this.$store.state.standard.stanId,
+              state: 0
+            }).then(res => {
+              console.log("function:/standard/changeState")
+              console.log(res, 'res')
+              if (res.code === '200') {
+                this.request.post("/message/sendProMsg", {
+                  title: '项目 ' + this.formData.name + ' 审核',
+                  type: 1, //0表示系统消息,1代表项目消息
+                  subday: this.subDay,
+                  sphone: this.$store.state.user.user.phone,
+                  text: '项目名称：' + this.formData.name + '\n负责人：' + this.$store.state.user.user.name + '(手机号' + this.$store.state.user.user.phone + ')\n项目审核失败，请继续编写！\n审核意见：' + this.stateForm.suggestion,
+                  stanId: this.formData.id,
+                  proType: 4,//项目消息类型：1添加，2转让，3申请，4审核，5删除
+                  uphones: receiverPhone
+                }).then(res => {
+                  console.log("function:/message/sendProMsg")
+                  console.log(res, 'res')
+                  if (res.code === '200') {
+                    this.$message.success(res.message)
+                    //更新列表
+                    this.isShow = false
+                    this.load()
+                  } else {
+                    this.$message.error(res.message)
+                  }
+                })
+              }
             })
-          })
+          } else {
+            this.request.post("/standard/changeState", {
+              stanId: this.$store.state.standard.stanId,
+              state: 2
+            }).then(res => {
+              console.log("function:/standard/changeState")
+              console.log(res, 'res')
+              if (res.code === '200') {
+                this.$message.success("发布成功")
+                this.request.post("/message/sendProMsg", {
+                  title: '项目 ' + this.formData.name + ' 审核',
+                  type: 1, //0表示系统消息,1代表项目消息
+                  subday: this.subDay,
+                  sphone: this.$store.state.user.user.phone,
+                  text: '项目名称：' + this.formData.name + '\n负责人：' + this.$store.state.user.user.name + '(手机号' + this.$store.state.user.user.phone + ')\n项目审核成功，已发布！\n审核意见：' + this.stateForm.suggestion,
+                  stanId: this.formData.id,
+                  proType: 4,//项目消息类型：1添加，2转让，3申请，4审核，5删除
+                  uphones: receiverPhone
+                }).then(res => {
+                  console.log(res, 'res')
+                  if (res.code === '200') {
+                    //更新列表
+                    this.isShow = false
+                    this.load()
+                  } else {
+                    this.$message.error(res.message)
+                  }
+                })
+              }
+            })
+          }
         }
       }
     },
 
     //删除编写者
     deleteUser(val) {
-      let editors = ''
-      this.editorsData = this.editorsData.filter(item => item.phone !== val.phone)
-      for (let i = 0; i < this.editorsData.length; i++) {
-        editors = editors + this.editorsData[i].name + ' '
-      }
-      this.formData.editorsName = editors
-      this.formData.editors = this.editorsData
+      //通知，这里使用的是element-ui中MessageBox的confirm方法，因此需要在main.js中进行绑定
+      this.$confirm("此操作将会永久删除该编写者，是否继续？", "提示", {
+        confirmButtonText: "确认",
+        cancelButtonText: "取消",
+        type: "warning"
+      }).then(() => {
+        this.request.post("/standard/deleteEditor/" + this.formData.id + "/" + val.phone).then(res => {
+          console.log("function：/standard/deleteEditor")
+          console.log(res, 'res')
+          if (res.code === '200') {
+            this.$message.success(res.message)
+            this.load()
+          } else {
+            this.$message.error(res.message)
+          }
+        })
+      })
     },
 
     //添加编写者
     addUser() {
-      if (this.operateForm.phone === '') {
-        this.$message.warning('输入手机号不能为空')
-      } else if (this.editorsData.filter(item => item.phone === this.operateForm.phone).length > 0) {
-        this.$message.warning('该用户已是编写者')
+      this.$refs.form.isValid(this.validInfo) //调用form中的函数
+      if (this.validInfo.value === 0) { //校验不通过
+        this.$message.warning(this.validInfo.message)
       } else {
-        //通知，这里使用的是element-ui中MessageBox的confirm方法，因此需要在main.js中进行绑定
-        this.$confirm("此操作将会向该用户发送信息，是否继续？", "提示", {
-          confirmButtonText: "确认",
-          cancelButtonText: "取消",
-          type: "warning"
-        }).then(() => {
-          sendMessage({
-            title: '项目 ' + this.formData.name + ' 添加编写者',
-            type: 1, //0表示系统消息，1表示项目消息(需要确认的)，2表示项目消息(不需要确认的)
-            senderPhone: this.$store.state.user.user.phone,
-            receiverPhone: [this.operateForm.phone],
-            subDay: this.subDay,
-            text: '项目名称：' + this.formData.name + '\n负责人：' + this.$store.state.user.user.name + '(手机号' + this.$store.state.user.user.phone + ')\n邀请您成为编写者',
+        if (this.editorsData.filter(item => item.phone === this.operateForm.phone).length > 0) {
+          this.$message.warning('该用户已是编写者')
+        } else {
+          //通知，这里使用的是element-ui中MessageBox的confirm方法，因此需要在main.js中进行绑定
+          this.$confirm("此操作将会向该用户发送信息，是否继续？", "提示", {
+            confirmButtonText: "确认",
+            cancelButtonText: "取消",
+            type: "warning"
           }).then(() => {
-            //同$confirm类似
-            this.$message({
-              type: "success",
-              message: "已发送信息！"
+            this.request.post("/message/sendProMsg", {
+              title: '项目 ' + this.formData.name + ' 添加编写者',
+              type: 1, //0表示系统消息,1代表项目消息
+              subday: this.subDay,
+              sphone: this.$store.state.user.user.phone,
+              text: '项目名称：' + this.formData.name + '\n负责人：' + this.$store.state.user.user.name + '(手机号' + this.$store.state.user.user.phone + ')\n邀请您成为编写者',
+              stanId: this.formData.id,
+              proType: 1,//项目消息类型：1添加，2转让，3申请，4审核，5删除
+              uphones: [this.operateForm.phone]
+            }).then(res => {
+              console.log("function:/message/sendProMsg")
+              console.log(res, 'res')
+              if (res.code === '200') {
+                this.$message.success(res.message)
+              } else {
+                this.$message.error(res.message)
+              }
             })
           })
-        })
+        }
       }
     },
 
     //修改信息
     editStan() {
-      //通知，这里使用的是element-ui中MessageBox的confirm方法，因此需要在main.js中进行绑定
-      this.$confirm("此操作将修改该数据标准的信息，是否继续？", "提示", {
-        confirmButtonText: "确认",
-        cancelButtonText: "取消",
-        type: "warning"
-      }).then(() => {
-        editStan({
-          stanId: this.$store.state.standard.stanId,
-          pageName: this.$store.state.standard.stanPage,
-          name: this.formData.name,
-          ename: this.formData.ename,
-          manager: this.formData.manager,
-          editors: this.formData.editors,
-          creDay: this.formData.creDay,
-          level: this.formData.level.length,
-          level1:this.formData.level[0],
-          level2:this.formData.level[1],
-          level3:this.formData.level[2],
-          description: this.formData.description
+      this.$refs.form.isValid(this.validInfo) //调用form中的函数
+      if (this.validInfo.value === 0) { //校验不通过
+        this.$message.warning(this.validInfo.message)
+        console.log(this.validInfo.value)
+      } else {
+        //处理formData中level的数值
+        this.formData.levelId = this.formData.levelList[this.formData.levelList.length - 1]
+        //通知，这里使用的是element-ui中MessageBox的confirm方法，因此需要在main.js中进行绑定
+        this.$confirm("此操作将修改该数据标准的信息，是否继续？", "提示", {
+          confirmButtonText: "确认",
+          cancelButtonText: "取消",
+          type: "warning"
         }).then(() => {
-          //同$confirm类似
-          this.$message({
-            type: "success",
-            message: "修改成功！"
+          this.request.post("/standard/update", this.formData).then(res => {
+            console.log("function：/standard/findOne")
+            console.log(res, 'res')
+            if (res.code === '200') {
+              this.$message.success(res.message)
+              //更新列表
+              this.stanIsShow = false
+              this.load()
+            } else {
+              this.$message.error(res.message)
+            }
           })
-          //更新列表
-          this.stanIsShow = false
-          this.getCardInfo()
         })
-      })
+      }
     },
 
     //删除信息
@@ -558,15 +667,15 @@ export default {
         cancelButtonText: "取消",
         type: "warning"
       }).then(() => {
-        deleteStan({
-          stanIds: [this.$store.state.standard.stanId],
-        }).then(() => {
-          //同$confirm类似
-          this.$message({
-            type: "success",
-            message: "删除成功！"
-          })
-          this.$router.push({name: 'myManage'})
+        this.request.delete("/standard/" + this.$store.state.standard.stanId).then(res => {
+          console.log("function:/stanard/delete")
+          console.log(res, 'res')
+          if (res.code === '200') {
+            this.$message.success(res.message)
+            this.$router.push({name: 'myManage'})
+          } else {
+            this.$message.error(res.message)
+          }
         })
       })
     },
@@ -581,7 +690,7 @@ export default {
   ,
 
   created() {
-    this.getCardInfo()
+    this.load()
   }
 }
 </script>
@@ -635,6 +744,7 @@ export default {
 
       .form {
         height: auto;
+        width: auto;
         display: block;
         justify-content: center;
         align-items: center;

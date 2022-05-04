@@ -2,7 +2,7 @@
   <div class="common-table">
     <div class="primary" v-if="hasPager===false">
       <!--tableData用于接收数据-->
-      <el-table  :data="tableData" height="100%" style="width: 100%"
+      <el-table :data="tableData" height="100%" style="width: 100%"
                 @selection-change="handleSelectionChange" stripe>
         <el-table-column
             v-if="pageName==='edit'"
@@ -33,14 +33,18 @@
         <!-- manage -->
         <el-table-column v-if="pageName==='manage'" fixed="right" label="操作" min-width="100" align="center">
           <template slot-scope="scope">
-            <el-button size="mini" type="danger" @click="deleteMessage(scope.row)">删除</el-button>
+            <el-button v-if="scope.row.phone!==$store.state.user.user.phone" size="mini" type="danger" @click="deleteMessage(scope.row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
     </div>
     <div class="better" v-if="hasPager===true">
       <!--tableData用于接收数据-->
-      <el-table :data="tableData" class="table" height="calc(100% - 35px)" width="100%" style="width: 100%" @selection-change="handleSelectionChange" stripe>
+      <el-table :data="tableData" class="table"
+                height="calc(100% - 35px)"
+                width="100%"
+                style="width: 100%"
+                @selection-change="handleSelectionChange" stripe>
         <!--复选框-->
         <el-table-column
             v-if="pageName!=='home'&&pageName!=='level'"
@@ -57,7 +61,8 @@
         >
           <!--template用于帮助拿到当前行的数据-->
           <template slot-scope="scope">
-            <span v-if="item.label==='序号'" style="margin-left: 10px">{{ (config.pager-1)*config.pageSize+scope.$index + 1 }}</span>
+            <span v-if="item.label==='序号'"
+                  style="margin-left: 10px">{{ (config.pager - 1) * config.pageSize + scope.$index + 1 }}</span>
             <span v-if="item.label!=='序号'" style="margin-left: 10px">{{ scope.row[item.prop] }}</span>
           </template>
         </el-table-column>
@@ -66,21 +71,21 @@
         <el-table-column v-if="pageName==='home'" fixed="right" label="操作" min-width="200" align="center">
           <template slot-scope="scope">
             <el-button size="mini" @click="handleCheckHome(scope.row)">查看</el-button>
-            <el-button size="mini" type="danger" @click="handleLoadHome(scope.row)">下载</el-button>
           </template>
         </el-table-column>
         <!-- total -->
         <el-table-column v-if="pageName==='total'" fixed="right" label="操作" min-width="100" align="center">
           <template slot-scope="scope">
+            <el-button size="mini" @click="handleCheckHome(scope.row)">查看</el-button>
             <el-button size="mini" type="danger" @click="handleDeleteTotal(scope.row)">删除</el-button>
           </template>
         </el-table-column>
         <!-- level -->
         <el-table-column v-if="pageName==='level'" fixed="right" label="操作" min-width="200" align="center">
           <template slot-scope="scope">
-            <el-button size="mini" v-if="level.toString()!=='3'&&scope.row.name!=='默认'"  @click="handleNext(scope.row)">查看下一级</el-button>
-            <el-button size="mini" v-if="scope.row.name!=='默认'"  @click="handleEdit(scope.row)">编辑</el-button>
-            <el-button size="mini" v-if="scope.row.name!=='默认'" type="danger" @click="handleDelete(scope.row)">删除</el-button>
+            <el-button size="mini" v-if="choseLevel.level!==3&&scope.row.name!=='默认'" @click="handleNext(scope.row)">查看下一级</el-button>
+            <el-button size="mini" v-if="scope.row.name!=='默认'" @click="handleEdit(scope.row)">编辑</el-button>
+            <el-button size="mini" v-if="scope.row.name!=='默认'||(choseLevel.levelNum===1&&scope.row.name==='默认'&&choseLevel.level!==1)" type="danger" @click="handleDelete(scope.row)">删除</el-button>
           </template>
         </el-table-column>
         <!-- manage -->
@@ -100,7 +105,7 @@
         <el-table-column v-if="pageName==='message'" fixed="right" label="操作" min-width="200" align="center">
           <template slot-scope="scope">
             <el-button size="mini" @click="checkMessage(scope.row)">查看</el-button>
-            <el-button v-if="messageType==='2'" size="mini" type="danger" @click="deleteMessage(scope.row)">删除</el-button>
+            <el-button size="mini" type="danger" @click="deleteMessage(scope.row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -130,8 +135,8 @@ export default {
     pageName: String,
     hasPager: Boolean,
     height: String,
-    level:String,
-    messageType:String,
+    choseLevel: Object,
+    messageType: String,
   },
 
   data() {
@@ -181,11 +186,11 @@ export default {
       this.$emit('changePage', page)
     },
 
-    deleteMessage(row){
+    deleteMessage(row) {
       this.$emit('delete', row)
     },
 
-    checkMessage(row){
+    checkMessage(row) {
       this.$emit('check', row)
     }
   }

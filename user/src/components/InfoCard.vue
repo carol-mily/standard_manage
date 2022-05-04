@@ -2,11 +2,11 @@
     <div class="stanCard">
       <div class="main">
         <div class="left">
-          <span class="manager">负责人：{{ cardData.managerName }}</span>
-          <span class="editor">编写者：{{ cardData.editors }}</span>
+          <span class="manager">负责人：{{ cardData.mname }}</span>
+          <span class="editor">编写者：{{ cardData.editorsName }}</span>
         </div>
         <div class="right">
-          <span class="creDay">创建时间：{{ cardData.creDay }}</span>
+          <span class="creDay">创建时间：{{ cardData.creday }}</span>
           <span class="level">分 级：{{ cardData.levelName }}</span>
         </div>
       </div>

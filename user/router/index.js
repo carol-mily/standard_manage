@@ -2,17 +2,13 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
 import Main from "../views/Main"
-// import User from "../views/user/index"
 import Home from "../views/home/index"
-// import Mall from "../views/mall/index"
-// import Page1 from "../views/others/pageOne"
-// import Page2 from "../views/others/pageTwo"
+
 import Login from "../views/login/index"
 import Register from "../views/register/index"
 import Forget from "../views/forget/index"
-// import Check from "../views/standard/check"
-// import Edit from "../views/standard/edit"
-// import uManage from "../views/standard/manage"
+import Check from "../views/standard/check"
+import NotFound from "../views/notFound"
 
 //整体引入VueRouter
 Vue.use(VueRouter)
@@ -24,37 +20,20 @@ const routes =[
         name:'Main',
         component:Main,
         // component:()=>import("../views/Main"),
-        //不明白redirect有什么作用
-        redirect:'/home',
+        redirect:'/home',   //redirect:重定向到首页
         children:[
-            //静态路由，现在已改为动态路由
             {
                 path:'/home',
                 //为何可以根据name跳转页面原因在此
                 name:'home',
                 component:Home
             },
-            // {
-            //     path:'/user',
-            //     name:'user',
-            //     component:User
-            //     // component:()=>import("../views/User")
-            // },
-            // {
-            //     path:'/mall',
-            //     name:'mall',
-            //     component: Mall
-            // },
-            // {
-            //     path:'/page1',
-            //     name:'page1',
-            //     component: Page1
-            // },
-            // {
-            //     path:'/page2',
-            //     name:'page2',
-            //     component: Page2
-            // }
+            {
+                path: '/check',
+                name: 'check',
+                label: '查看',
+                component:Check
+            },
         ]
     },
     {
@@ -72,22 +51,19 @@ const routes =[
         name:'/forget',
         component: Forget
     },
+    {   //404可能会出现问题
+        path:'/NotFound',
+        name:'NotFound',
+        meta: {
+            title: 'Page not found',
+            isLogin: false
+        },
+        component:NotFound
+    },
     // {
-    //     path:'/check',
-    //     name:'/check',
-    //     component: Check
-    // },
-    // {
-    //     path:'/edit',
-    //     name:'/edit',
-    //     component: Edit
-    // },
-    // {
-    //     path:'/umanage',
-    //     name:'/umanage',
-    //     component: uManage
+    //     path: '*',
+    //     redirect: '/NotFound'
     // }
-
 ]
 
 //配置VueRouter

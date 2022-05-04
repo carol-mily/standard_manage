@@ -79,8 +79,8 @@ import InfoCard from "@/components/InfoCard";
 import CommonAside from "@/components/CommonAside";
 import CommonTable from "@/components/CommonTable";
 import CommonForm from "@/components/CommonForm";
-import {getStanInfo, getStanItem} from "../../api/data";
 import Level from '../../util/level'
+import Text from '../../util/text'
 
 export default {
   name: "check",
@@ -108,21 +108,21 @@ export default {
           disabled:true
         },
         {
-          model: 'managerName',
+          model: 'mname',
           label: "负责人",
           type: "input",
           style: "width:200px;",
           disabled:true
         },
         {
-          model: 'editors',
+          model: 'editorsName',
           label: "编写者",
           type: "input",
           style: "width:200px;",
           disabled:true
         },
         {
-          model: 'level',
+          model: 'levelList',
           label: '分级',
           type: 'cascader',
           style: "width:200px;",
@@ -130,7 +130,7 @@ export default {
           disabled:true
         },
         {
-          model: 'creDay',
+          model: 'creday',
           label: "创建日期",
           type: "date",
           style: "width:200px;",
@@ -145,8 +145,7 @@ export default {
         },
 
       ],
-      asideStanData: {
-      },
+      asideStanData: {},
       asideTableLabel: [
         {
           model: 'name',
@@ -163,7 +162,7 @@ export default {
           disabled:true
         },
         {
-          model: 'creDay',
+          model: 'creday',
           label: "创建日期",
           type: "date",
           style: "width:200px;",
@@ -182,21 +181,22 @@ export default {
         name: '',
         ename: '',
         level: '',
-        creDay: '',
+        creday: '',
         description: ''
       },
       cardStanData: {
         id: '',
         name: '',
         ename: '',
-        managerName: '',
-        editors: '',
-        creDay: '',
+        mname: '',
+        editorsName: '',
+        creday: '',
         levelName:'',
         level: '',
         description: '',
       },
       tableList:[],
+      chooseTable:0,
       itemData: [],
       itemLabel: [
         {
@@ -220,7 +220,7 @@ export default {
         },
         {
           //数据中读取的字段的名称
-          prop: "type",
+          prop: "typeName",
           //列的名称
           label: "字段类型",
           width: "100px"
@@ -234,14 +234,14 @@ export default {
         },
         {
           //数据中读取的字段的名称
-          prop: "decimal",
+          prop: "decim",
           //列的名称
           label: "小数位数",
           width: "100px"
         },
         {
           //数据中读取的字段的名称
-          prop: "constraint",
+          prop: "cstraint",
           //列的名称
           label: "约束条件",
           width: "200px"
@@ -260,44 +260,62 @@ export default {
   },
 
   methods: {
-    //得到完整数据结构信息
-    getCardInfo() {
-      getStanInfo({
-        stanId: this.$store.state.standard.stanId,
-        pageName: this.$store.state.standard.stanPage
-      }).then(({data: res}) => {
-        //上面是使用es6的解构赋值为res
-        console.log(res, 'res')
-        let editor = ''
-        for (let i = 0; i < res.data.list.editors.length; i++) {
-          editor = editor + res.data.list.editors[i].name + ' '
+    load(){
+      this.request.get("/standard/findById/"+this.$store.state.standard.stanId).then(res=>{
+        console.log("function：/standard/findById")
+        console.log(res,'res')
+        if(res.code==='200'){
+          this.cardStanData=res.data
+          this.cardStanData.levelName = Level.getLevelName(this.$store.state.level.level, this.cardStanData.levelList)
+          if (this.cardStanData.state === 2) {
+            this.cardStanData.stateName = '已发布'
+          } else if (this.cardStanData.state === 1) {
+            this.cardStanData.stateName = '审核中'
+          } else {
+            this.cardStanData.stateName = '编写中'
+          }
+          this.cardStanData.editorsName=Text.textFromArray(this.cardStanData.editors)
+          this.loadTable()
+        }else{
+          this.$message.error(res.message)
         }
-        //设置全局变量
-        // this.$store.commit('clearStandard')
-        // this.$store.commit('setStandard',res.list[0])
-        // this.cardData=this.asyncStan
-        this.cardStanData = res.data.list
-        this.cardStanData.managerName=res.data.list.manager.name
-        this.cardStanData.editors = editor
-        this.cardStanData.levelName=Level.getLevelName(this.$store.state.level.level,res.data.list.level1,res.data.list.level2,res.data.list.level3)
-        this.cardStanData.level=Level.getLevelList(this.$store.state.level.level,res.data.list.level1,res.data.list.level2,res.data.list.level3)
-        this.tableList=res.data.list.table
-        this.itemData=res.data.list.table[0].item
-      });
+      })
+    },
+
+    loadTable(){
+      this.request.get("/table/findByStanId/"+this.$store.state.standard.stanId).then(res=>{
+        console.log("function：/table/findByStanId")
+        console.log(res,'res')
+        if(res.code==='200'){
+          this.tableList=res.data
+          if(this.tableList.length!==0){ //当表不为空时
+            this.chooseTable=this.tableList[0].id //设置初始tableId
+            this.loadItem()
+          }
+        }else{
+          this.$message.error(res.message)
+        }
+      })
+    },
+
+    loadItem(){
+      if(this.chooseTable){
+        this.request.get("/item/findByTableId/"+this.chooseTable).then(res=>{
+          console.log("function：/item/findByTableId")
+          console.log(res,'res')
+          if(res.code==='200'){
+            this.itemData=res.data
+          }else{
+            this.$message.error(res.message)
+          }
+        })
+      }
     },
 
     //换表
     changeTable(item){
-      this.itemNum= item.id
-      getStanItem({
-        stanId:this.$store.state.standard.stanId,
-        tableId: item.id,
-        pageName: this.$store.state.standard.stanPage,
-      }).then(({data: res}) => {
-        //上面是使用es6的解构赋值为res
-        console.log(res, 'res')
-        this.itemData=res.data.stanItem
-      });
+      this.chooseTable= item.id
+      this.loadItem()
     },
 
     //查看数据标准详情
@@ -315,7 +333,7 @@ export default {
       this.operateType='checkTable'
       this.tableIsShow=true
       //表内数据显示为当前行内的数据，回写
-      this.asideTableData = this.tableList[item.id]
+      this.asideTableData = this.tableList.filter(table=>table.id===item.id)[0] //找到对应的table信息
       console.log('表的信息：'+this.asideTableData)
       //换表
       this.changeTable(item)
@@ -323,13 +341,45 @@ export default {
 
     //下载数据标准
     download(){
-      alert('下载文件中……')
+      if(this.$store.state.user.user.phone!==undefined){
+        if(this.cardStanData.state===2){  //已发布
+          console.log('function:standard/export')
+          window.open("http://localhost:9090/standard/export/"+this.$store.state.standard.stanId)
+        }else{
+          this.$confirm("数据标准未发布，无法下载！", "提示", {
+            confirmButtonText: "确认",
+            cancelButtonText: "取消",
+            type: "warning"
+          }).then(() => {
+            this.load()
+          })
+        }
+      }else{
+        this.$confirm("请登录以获得更多权限", "提示", {
+          confirmButtonText: "确认",
+          cancelButtonText: "取消",
+          type: "warning"
+        }).then(() => {
+          this.load()
+        })
+      }
     },
 
     //编辑数据标准
     editStan(){
       console.log('Join:check -> edit index:'+this.cardStanData.id)
-      this.$router.push({name: 'edit'})
+      if(this.cardStanData.state===0){
+        console.log('添加 stanId:'+this.$store.state.standard.stanId)
+        this.$router.push({name: 'edit'})
+      }else {
+        this.$confirm("该数据标准当前处于" + this.cardStanData.stateName + "状态，无法编写！", "提示", {
+          confirmButtonText: "确认",
+          cancelButtonText: "取消",
+          type: "warning"
+        }).then(() => {
+          this.load()
+        })
+      }
     },
 
     //管理数据标准
@@ -355,7 +405,7 @@ export default {
   // },
 
   created() {
-    this.getCardInfo()
+    this.load()
   }
 }
 </script>

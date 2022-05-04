@@ -11,8 +11,7 @@
           <el-button type="primary"
                      plain
                      @click="searchStan"
-                     style="height: 38px"
-          >搜索
+                     style="height: 38px">搜索
           </el-button>
         </common-form>
       </div>
@@ -22,7 +21,7 @@
     </div>
     <div class="show">
       <div class="aside">
-        <common-aside :menu="this.$store.state.level.level" aside-name="total" @chooseTable="chooseMenu"></common-aside>
+        <common-aside :menu="level" aside-name="total" @chooseTable="chooseMenu" @getAll="getAll"></common-aside>
       </div>
       <div class="table">
         <common-table
@@ -33,6 +32,7 @@
             :has-pager=true
             @changePage="changeList"
             @deleteTotal="deleteStan"
+            @checkHome="checkHome"
             @selectionChange="selectionChange"
         ></common-table>
       </div>
@@ -41,7 +41,6 @@
 </template>
 
 <script>
-import {getTotal,deleteStan} from '../../api/data'
 import CommonForm from "@/components/CommonForm";
 import CommonAside from "@/components/CommonAside";
 import CommonTable from "@/components/CommonTable";
@@ -59,12 +58,13 @@ export default {
   data() {
     return {
       userImg: require('../../src/assets/images/logo.png'),
+      level: this.$store.state.level.level, //左菜单分级
       formLabel: [
         {
           model: "keyword",
           label: '',
           type: 'search',
-          style: "width:500px"
+          style: "width:500px;"
         }
       ],
       searchForm: {
@@ -76,99 +76,131 @@ export default {
         {
           //列的名称
           label: "序号",
-          width:"100px"
+          width: "50px"
         },
         {
           //数据中读取的字段的名称
           prop: "name",
           //列的名称
           label: "名称",
-          width:"300px"
+          width: "300px"
         },
         {
           //数据中读取的字段的名称
           prop: "levelName",
           //列的名称
           label: "分级",
-          width:"200px"
+          width: "200px"
         },
         {
           //数据中读取的字段的名称
           prop: "stateName",
           //列的名称
           label: "状态",
-          width:"100px"
+          width: "100px"
         },
         {
           //数据中读取的字段的名称
-          prop: "creDay",
+          prop: "creday",
           //列的名称
           label: "创建时间",
           width: "200px"
         },
         {
           //数据中读取的字段的名称
-          prop: "manager",
+          prop: "mname",
           //列的名称
           label: "负责人",
-          width: "200px"
+          width: "150px"
         },
       ],
       //默认页数值
       config: {
         pager: 1,
         total: 30,
-        pageSize:10,
+        pageSize: 9,
       },
-      chooseLevel:{ //选择的分级
-        level:1,
-        levelId:[0,-1,-1]
-      },
-      selection:[],
-      pageName:'total',
+      chooseLevel: null,
+      selection: [],
+      pageName: 'total',
     }
   },
   methods: {
+    load() {
+      this.loadLevel()
+      this.loadType()
+      this.getList()
+    },
+
+    loadLevel() {
+      this.request.get("/level/findAll").then(res => {
+        console.log("function:/level/findAll")
+        console.log(res, 'res')
+        if (res.code === '200') {
+          this.level = res.data
+          //处理多余的children
+          this.level = Level.cleanChildren(this.level)
+          //level存入store中以供form使用
+          this.$store.state.level.level = this.level
+        } else {
+          this.$message.error(res.message)
+        }
+      })
+    },
+
+    loadType(){
+      this.request.get("/type/findAll").then(res=>{
+        console.log("function：/type/findAll")
+        console.log(res,'res')
+        if(res.code==='200'){
+          this.$store.state.typeList.typeList=res.data
+        }else{
+          this.$message.error(res.message)
+        }
+      })
+    },
+
     getList() {
       this.config.loading = true
-      getTotal({
-        pageName:this.pageName,
-        phone:this.$store.state.user.user.phone,
-        page: this.config.pager,
-        name: this.searchName,
-        level:this.chooseLevel.level,
-        levelId: this.chooseLevel.levelId[this.chooseLevel.level-1]
-      }).then(({data:res}) => {
-        //上面是使用es6的解构赋值为res
-        console.log(res,'res')
-        this.tableData = res.data.list.map(item => {
-          //映射
-          item.manager=item.manager.name
-          item.levelName=Level.getLevelName(this.$store.state.level.level,item.level1,item.level2,item.level3)
-          if(item.state===2){
-            item.stateName='已发布'
-          }else if(item.state===1){
-            item.stateName='审核中'
-          }else{
-            item.stateName='编写中'
-          }
-          return item
-        })
-        this.config.total = res.data.count
+      this.request.get("/standard/getPage", {
+        params: {
+          pageNum: this.config.pager,
+          pageSize: this.config.pageSize,
+          levelid: this.chooseLevel,
+          name: this.searchName,
+        }
+      }).then(res => {
+        console.log("function:/standard/getPage")
+        console.log(res, 'res')
+        if (res.code === '200') {
+          this.tableData = res.data.records.map(item => {
+            //映射
+            if (item.state === 2) {
+              item.stateName = '已发布'
+            } else if (item.state === 1) {
+              item.stateName = '审核中'
+            } else {
+              item.stateName = '编写中'
+            }
+            item.levelName = Level.getLevelName(this.level, item.levelList)
+            return item
+          })
+        }
+        this.config.total = res.data.total
         this.config.loading = false
-      });
+      })
     },
 
     searchStan() {
       this.searchName = this.searchForm.keyword
       this.config.pager = 1
-      this.getList()
+      this.load()
     },
 
-    changeList(page){
+    changeList(page) {
       this.config.loading = true
-      this.config.pager=page
-      this.getList()
+      this.config.pager = page
+      this.load()
     },
 
     // handleSelectionChange(val) {
@@ -177,6 +209,7 @@ export default {
     handleEdit(index, row) {
       console.log(index, row);
     },
+
     handleDelete(index, row) {
       console.log(index, row);
     },
@@ -188,19 +221,25 @@ export default {
         cancelButtonText: "取消",
         type: "warning"
       }).then(() => {
-        const id = row.id
-        deleteStan({
-          stanIds: [id]
-        }).then(() => {
-          //同$confirm类似
-          this.$message({
-            type: "success",
-            message: "删除成功！"
-          })
-          //更新列表
-          this.getList('')
+        this.request.delete("/standard/" + row.id).then(res => {
+          console.log("function:/stanard/delete")
+          console.log(res, 'res')
+          if (res.code === '200') {
+            this.$message.success(res.message)
+            this.load()
+          } else {
+            this.$message.error(res.message)
+          }
         })
       })
+    },
+
+    checkHome(row) {
+      console.log('Join:edit index:' + row.id)
+      let pageName = this.pageName
+      this.$store.commit('setStanId', {stanId: row.id, stanPage: pageName})
+      console.log('添加 stanId:' + this.$store.state.stanId)
+      this.$router.push({name: 'check'})
     },
 
     //复选框多选
@@ -220,45 +259,40 @@ export default {
         cancelButtonText: "取消",
         type: "warning"
       }).then(() => {
-        deleteStan({
-          stanIds: this.selection
-        }).then(() => {
-          //同$confirm类似
-          this.$message({
-            type: "success",
-            message: "删除成功！"
-          })
-          //更新列表
-          this.getList()
+        this.request.post("/standard/delete/batch", this.selection).then(res => {
+          console.log('function:/standard/delete/batch')
+          console.log(res, 'res')
+          if (res.code === '200') {
+            this.$message.success(res.message)
+            //更新列表
+            this.load()
+          } else {
+            this.$message.error(res.message)
+          }
         })
       })
     },
 
     //切换菜单
-    chooseMenu(item){
-      this.chooseLevel.level=item.level
-      this.chooseLevel.levelId[item.level-1]=item.id
-      this.getList()
+    chooseMenu(item) {
+      this.chooseLevel = item.id
+      this.load()
+    },
+
+    getAll(){
+      this.chooseLevel = null
+      this.load()
     }
   },
 
-  computed:{},
+  computed: {},
 
   mounted() {
-    // getData().then(res => {
-    //   //解析获得所需数据
-    //   const {code, data} = res.data
-    //   if (code === 20000) {
-    //     //请求成功，赋值到tableData
-    //     this.tableData = data.tableData
-    //   }
-    //   console.log(res)
-    // })
   },
   //生命周期
-  created(){
+  created() {
     //在页面加载时就需要调用
-    this.getList()
+    this.load()
   }
 }
 </script>
@@ -287,11 +321,13 @@ export default {
       align-items: center;
 
       .searchForm {
-        justify-content: center;
         margin: 0 0 0 25%;
-        display: flex;
-        height: 40px;
-        width: 40%;
+        padding: 10px 0 0 0;
+        display: inline-block;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+        width: auto;
       }
     }
 
@@ -302,7 +338,7 @@ export default {
       justify-content: center;
       align-items: center;
 
-      .delete{
+      .delete {
         height: 38px;
         width: 38px;
         display: flex;
@@ -336,7 +372,7 @@ export default {
       height: 100%;
       padding: 0;
 
-      common-aside{
+      common-aside {
         width: 100%;
         height: 100%;
       }

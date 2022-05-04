@@ -1,10 +1,12 @@
 <template>
   <header class="header">
     <div class="l-content">
-      <img class="logo" :src="userImg" style="width: 40px; height: 40px"/>
+<!--      <img class="logo" :src="sysIcon" style="width: 40px; height: 40px"/>-->
       <h3>数据上链标准管理系统</h3>
+      <!--当user存在时才有目录-->
       <el-menu
-          default-active="$route.path"
+          v-if="this.$store.state.user.user!=={}"
+          :default-active="defaultAct"
           class="el-menu-vertical-demo"
           mode="horizontal"
           @open="handleOpen"
@@ -18,16 +20,16 @@
           <el-menu-item
               @click="clickMenu(item)"
               v-if="!item.children"
-              :index="item.id.toString()"
-              :key="item.id.toString()"
+              :index="item.name"
+              :key="item.name"
               style="width:150px; text-align: center; font-size: 17px">
             <!--          <i :class="'el-icon-'+item.icon"></i>-->
             <span slot="title">{{ item.label }}</span>
           </el-menu-item>
           <!--循环读取有子菜单的item-->
           <el-submenu
-              :index="item.id.toString()"
-              :key="item.id.toString()"
+              :index="item.name"
+              :key="item.name"
               v-if="item.children"
               style="width:150px; text-align: center; font-size: 16px">
             <template slot="title">
@@ -39,8 +41,8 @@
             <el-menu-item-group v-for="subItem in item.children" :key="subItem.id" :index="subItem.id.toString()">
               <el-menu-item
                   @click="clickMenu(subItem)"
-                  :index="subItem.id.toString()"
-                  :key="subItem.id.toString()"
+                  :index="subItem.name"
+                  :key="subItem.name"
                   style="width:150px; text-align: center; font-size: 17px;">{{ subItem.label }}
               </el-menu-item>
             </el-menu-item-group>
@@ -49,15 +51,20 @@
       </el-menu>
     </div>
     <div class="r-content">
-      <el-dropdown trigger="click" size="mini">
+      <el-dropdown v-if="this.$store.state.user.user.phone!==undefined" trigger="click" size="mini">
         <span>
-          <img class="user" :src="userImg"/>
+          <img class="user" :src="user.avatar"/>
         </span>
         <el-dropdown-menu slot="dropdown">
           <!--对组件添加事件，需要添加native-->
           <el-dropdown-item @click.native="logOut">退出登录</el-dropdown-item>
         </el-dropdown-menu>
       </el-dropdown>
+      <el-button v-if="this.$store.state.user.user.phone===undefined"
+                 type="primary"
+                 plain
+                 @click="logIn"
+                 style="height: 38px">登录</el-button>
     </div>
   </header>
 </template>
@@ -71,23 +78,39 @@ export default {
   name: "CommonHeader",
   data() {
     return {
-      userImg: require('../assets/images/logo.png'),
+      sysIcon:  require('@/assets/images/logo.png'),
+      defaultAct:this.$router.currentRoute.name
     }
   },
 
+  props:{
+    user:Object,
+  },
+
   methods: {
-    logOut() {
-      this.$store.commit('clearToken')
-      this.$store.commit('clearMenu')
-      this.$store.commit('clearRoutes')
-      this.$router.push('/login')
+    logIn(){
+      this.$router.push('/login') //跳转至登陆页面
     },
+
+    logOut() {
+      // this.$store.commit('clearToken')
+      this.$store.commit('clearMenu')
+      this.$store.commit('clearTag')  //清除tag
+      this.$store.commit('clearUser')
+      this.user={}  //user置为空
+      this.$store.commit('clearRoutes') //这里其实并没有清除，但清除了user，故无token
+      this.$router.replace({path: '/home'});  //跳转到home
+      location.reload();  //刷新页面
+    },
+
     handleOpen(key, keyPath) {
       console.log(key, keyPath);
     },
+
     handleClose(key, keyPath) {
       console.log(key, keyPath);
     },
+
     clickMenu(item) {
       //跳转
       this.$router.push({
@@ -106,8 +129,18 @@ export default {
     //动态获取菜单
     asyncMenu() {
       return this.$store.state.tab.menu
+    },
+  },
+
+  watch:{
+    '$route'(val){  //对路由进行监听（val内为当前路由）
+      if(val.name!=='edit'&&val.name!=='check'&&val.name!=='umanage'){
+        this.defaultAct=val.name
+      }
     }
-  }
+  },
+
+  created(){}
 }
 </script>
 
@@ -134,6 +167,7 @@ export default {
       display: flex;
       justify-content: center;
       text-align: center;
+      font-size:20px;
       line-height: 48px;
       width: 300px;
       height: 100%;

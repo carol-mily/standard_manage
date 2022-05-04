@@ -9,10 +9,11 @@
           :form-label="stanLabel"
           :form="stanData"
           :inline="true"
+          :rules="rules"
           ref="form"></common-form>
-      <div slot="footer" class="stanDialog_footer">
+      <div slot="footer" class="stanDialog_footer" style="text-align: center">
         <el-button @click="stanIsShow=false">取消</el-button>
-        <el-button type="primary" @click="addStan">确认</el-button>
+        <el-button type="primary" @click="add">确认</el-button>
       </div>
     </el-dialog>
 
@@ -27,10 +28,8 @@
               ref="form">
             <el-button type="primary"
                        plain
-                       @click="getCardInfo(searchForm.keyword)"
-                       style="height: 38px"
-            >搜索
-            </el-button>
+                       @click="load"
+                       style="height: 38px">搜索</el-button>
           </common-form>
         </div>
 
@@ -51,9 +50,9 @@
 </template>
 
 <script>
-import {addStan, getCard} from '../../api/data'
 import CommonForm from "@/components/CommonForm";
 import CommonCard from "@/components/CommonCard";
+import Level from "../../util/level";
 
 export default {
   name: "myManage",
@@ -64,9 +63,15 @@ export default {
   },
 
   data() {
+    let time = new Date();
+    let year = time.getFullYear();
+    let month = (time.getMonth()+1).toString().padStart(2,'0');
+    let day = time.getDate().toString().padStart(2,'0');
+    let today = year+'-'+month+'-'+day;
     return {
       userImg: require('../../src/assets/images/logo.png'),
       pageName: 'myManage',
+      today:today,
       formLabel: [
         {
           model: "keyword",
@@ -93,7 +98,7 @@ export default {
           style: "width:200px;",
         },
         {
-          model: 'manager',
+          model: 'mname',
           label: "负责人",
           type: "input",
           style: "width:200px;",
@@ -113,7 +118,7 @@ export default {
           options: this.$store.state.level.level
         },
         {
-          model: 'creDay',
+          model: 'creday',
           label: "创建日期",
           type: "date",
           style: "width:200px;",
@@ -138,44 +143,70 @@ export default {
         description: '',
       },
       stanIsShow: false,
+      rules: {
+        name:[
+          {
+            required: true, //必填
+            message: "请输入名称", //校验不通过的提示信息
+            trigger: "blur"  //触法方式
+          },
+          {
+            min:1,
+            max:20,
+            message:"名称长度应在20个字符以内",
+            trigger: "blur"
+          },
+        ],
+        ename:[
+          {
+            required: true, //必填
+            message: "请输入英文名称", //校验不通过的提示信息
+            trigger: "blur"  //触法方式
+          },
+          {
+            min:1,
+            max:20,
+            message:"英文名称长度应在20个字符以内",
+            trigger: "blur"
+          },
+        ],
+        description:{
+          max:200,
+          message:"描述长度应在200个字符以内",
+          trigger: "blur"
+        }
+      },
+      validInfo:{ //检验form内信息是否通过校验
+        value:0,
+        message:''
+      },
     }
   },
-  methods: {
-    getCardInfo(name = '') {
-      let pageName = this.pageName
-      getCard({
-        phone: this.$store.state.user.user.phone,
-        name,
-        pageName
-      }).then(({data: res}) => {
-        //上面是使用es6的解构赋值为res
-        console.log(res, 'res')
-        this.cardData = res.data.list.map(item => {
-          //映射
-          item.manager = item.manager.name
-          if(item.state===0){
-            item.stateName='编写中'
-          }else if(item.state===1){
-            item.stateName='审核中'
-          }else if(item.state===2){
-            item.stateName='已发布'
-          }
-          return item
-        })
-      });
-    },
 
-    check(index, row) {
-      console.log('用吗？')
-      console.log(index, row);
-    },
-    edit(index, row) {
-      console.log('用吗？')
-      console.log(index, row);
-    },
-    manage(index, row) {
-      console.log('用吗？')
-      console.log(index, row);
+  methods: {
+    load(){
+      this.request.get("/standard/findByMphone",{params:{
+          mphone:this.$store.state.user.user.phone,
+          name:this.searchForm.keyword
+        }
+      }).then(res=>{
+        console.log("function：/standard/findByMphone")
+        console.log(res,'res')
+        if(res.code==='200'){
+          this.cardData=res.data.map(item=>{
+            if(item.state===0){
+              item.stateName='编写中'
+            }else if(item.state===1){
+              item.stateName='审核中'
+            }else if(item.state===2){
+              item.stateName='已发布'
+            }
+            return item
+          })
+        }else{
+          this.$message.error(res.message)
+        }
+      })
     },
 
     checkSta(item) {
@@ -199,7 +230,7 @@ export default {
           cancelButtonText: "取消",
           type: "warning"
         }).then(() => {
-          this.getCardInfo()
+          this.load()
         })
       }
     },
@@ -215,66 +246,58 @@ export default {
     //添加数据标准详情
     addStanOpt() {
       console.log('添加数据标准')
-      let time = new Date();
-      let year = time.getFullYear();
-      let month = (time.getMonth()+1).toString().padStart(2,'0');
-      let day = time.getDate().toString().padStart(2,'0');
-      let creDay = year+'-'+month+'-'+day;
       this.stanIsShow = true
+      let fistLevel=Level.getFirstLevel(this.$store.state.level.level)
+      console.log(fistLevel)
       //表内数据显示为当前行内的数据，回写
       this.stanData = {
         name:'',
         ename: '',
-        manager: this.$store.state.user.user.name,
+        mname: this.$store.state.user.user.name,
+        mphone: this.$store.state.user.user.phone,
         editors: '',
-        level:this.$store.state.level.level[0],
-        creDay: creDay,
+        level:[fistLevel],
+        creday: this.today,
         description: '',
       }
     },
 
     //添加数据标准
-    addStan() {
-      addStan({
-        pageName: this.$store.state.standard.stanPage,
-        name: this.stanData.name,
-        ename: this.stanData.ename,
-        manager: this.$store.state.user.user, //直接添加该用户为负责人
-        editors: [],
-        creDay: this.stanData.creDay,
-        level: this.stanData.level.length,
-        level1:this.stanData.level[0],
-        level2:this.stanData.level[1],
-        level3:this.stanData.level[2],
-        description: this.stanData.description
-      }).then(() => {
-        //同$confirm类似
-        this.$message({
-          type: "success",
-          message: "添加成功！"
+    add() {
+      this.$refs.form.isValid(this.validInfo) //调用form中的函数
+      if (this.validInfo.value === 0) { //校验不通过
+        this.$message.warning(this.validInfo.message)
+      } else {
+        this.request.post("/standard/add",{
+          name: this.stanData.name,
+          ename: this.stanData.ename,
+          mphone: this.$store.state.user.user.phone, //直接添加该用户为负责人
+          creday: this.stanData.creday,
+          state:0,
+          levelId:this.stanData.level[this.stanData.level.length-1],
+          description: this.stanData.description
+        }).then(res=>{
+          console.log("function:/standard/add")
+          console.log(res,'res')
+          if(res.code==='200'){
+            this.$message.success(res.message)
+            this.stanIsShow = false
+            this.load()
+          }else{
+            this.$message.error(res.message)
+          }
         })
-        //更新列表
-        this.stanIsShow = false
-        this.getCardInfo()
-      })
+      }
     },
   },
-  mounted() {
-    // getData().then(res => {
-    //   //解析获得所需数据
-    //   const {code, data} = res.data
-    //   if (code === 20000) {
-    //     //请求成功，赋值到tableData
-    //     this.tableData = data.tableData
-    //   }
-    //   console.log(res)
-    // })
-  },
+
+  mounted() {},
+
   //生命周期
   created() {
     //在页面加载时就需要调用
-    this.getCardInfo()
-    this.$store.commit('setStanId', {stanId: 0, stanPage: this.pageName})
+    this.load()
+    // this.$store.commit('setStanId', {stanId: 0, stanPage: this.pageName})
   }
 }
 </script>
@@ -297,10 +320,11 @@ export default {
 
     .searchForm {
       justify-content: center;
-      margin: 10px 0 10px 430px;
+      padding: 10px 0 0 0;
+      margin: 10px 0 0 430px;
       display: flex;
-      height: 40px;
-      width: 600px;
+      height: 100%;
+      width: auto;
     }
 
     .add {

@@ -11,12 +11,12 @@
       <!--      </div>-->
       <div class="case">
         <div class="case1" v-if="show===false||cardId!==item.id" @click="overCard(item.id)">
-          <h3>{{ item.name }}</h3>
-          <span class="manager">负责人：{{ item.manager }}</span><br>
-          <span class="day">创建时间：{{ item.creDay }}</span><br>
+          <h3 >{{ item.name }}</h3>
+          <span class="manager">负责人：{{ item.mname }}</span><br>
+          <span class="day">创建时间：{{ item.creday }}</span><br>
           <span class="state">状态：{{ item.stateName }}</span>
         </div>
-        <div class="case2" v-if="show===true&&cardId===item.id&&pageName==='myJoin'" @click="outCard()">
+        <div class="case2" v-if="show===true&&cardId===item.id&&pageName==='myJoin'">
           <div class="l-content2" @click="check(item)">
             <img class="check" :src="eyeImg" style="width: 40px; height: 40px"/>
           </div>
@@ -24,7 +24,7 @@
             <img class="edit" :src="editImg" style="width: 40px; height: 40px"/>
           </div>
         </div>
-        <div class="case3" v-if="show===true&&cardId===item.id&&pageName==='myManage'" @click="outCard()">
+        <div class="case3" v-if="show===true&&cardId===item.id&&pageName==='myManage'">
           <div class="l-content3" @click="check(item)">
             <img class="check" :src="eyeImg" style="width: 30px; height: 30px"/>
           </div>
@@ -71,11 +71,6 @@ export default {
       this.cardId = id
     },
 
-    outCard() {
-      this.show = false
-      this.cardId = 0
-    },
-
     check(item){
       this.$emit('check',item)
       // this.$router.push({name: 'check'})
@@ -90,6 +85,20 @@ export default {
       this.$emit('manage',item)
       // this.$router.push({name: 'umanage'})
     }
+  },
+
+  mounted(){
+    // 模拟外部点击
+    document.addEventListener('click', (e) => {
+      if(!this.$el.contains(e.target)){
+        this.show = false
+        this.cardId = 0
+      }
+    })
+  },
+// 在组件生命周期结束时销毁
+  beforeDestroy() {
+    window.removeEventListener('click', () => {}, true)
   }
 }
 </script>

@@ -7,6 +7,7 @@
       <common-form
           :form-label="operateFormLabel"
           :form="operateForm"
+          :rules="rules"
           :inline="true"
           ref="form"></common-form>
       <div slot="footer" class="dialog__footer">
@@ -26,8 +27,7 @@
           <el-button type="primary"
                      plain
                      @click="searchUser"
-                     style="height: 38px"
-          >搜索
+                     style="height: 38px">搜索
           </el-button>
         </common-form>
       </div>
@@ -45,8 +45,8 @@
           :config="config"
           :has-pager=true
           :page-name="pageName"
-          :level="choseLevel.level"
-          @changePage="getList()"
+          :choseLevel="choseLevel"
+          @changePage="getLevel()"
           @editItem="editItem"
           @deleteItem="deleteItem"
           @nextItem="nextItem"
@@ -58,7 +58,6 @@
 <script>
 import CommonForm from "@/components/CommonForm";
 import CommonTable from "@/components/CommonTable";
-import {addLevel,editLevel,deleteLevel,getTotalLevel, getLevel} from "../../api/data"
 import Level from '../../util/level'
 
 export default {
@@ -87,7 +86,7 @@ export default {
           label: '级数',
           type: 'select',
           style: "width:200px;",
-          disabled:true,
+          disabled: true,
           opts: [
             {
               label: '1',
@@ -108,24 +107,53 @@ export default {
           label: "上一级名称",
           type: "input",
           style: "width:200px;",
-          disabled:true,
+          disabled: true,
         },
         {
           model: 'childrenNum',
           label: "下一级数目",
           type: "input",
           style: "width:200px;",
-          disabled:true,
+          disabled: true,
         },
         {
           model: 'stanNum',
           label: "数据标准数目",
           type: "input",
           style: "width:200px;",
-          disabled:true,
+          disabled: true,
+        },
+        {
+          model: 'description',
+          label: "描述",
+          type: "textarea",
+          style: "width:510px;",
         },
       ],
       operateForm: {},
+      rules: {
+        name: [
+          {
+            required: true, //必填
+            message: "请输入分级名称", //校验不通过的提示信息
+            trigger: "blur"  //触法方式
+          },
+          {
+            max: 15,
+            message: "名称长度不应超过15个字符",
+            trigger: "blur"
+          }
+        ],
+        description: {
+          max: 200,
+          message: "描述长度不应超过200个字符",
+          trigger: "blur"
+        }
+      },
+      validInfo: { //检验form内信息是否通过校验
+        value: 0,
+        message: ''
+      },
       //搜索功能相关
       formLabel: [
         {
@@ -159,7 +187,7 @@ export default {
           prop: "level",
           //列的名称
           label: "级数",
-          width: 200
+          width: 100
         },
         {
           //数据中读取的字段的名称
@@ -173,126 +201,143 @@ export default {
           prop: "childrenNum",
           //列的名称
           label: "下一级数目",
-          width: 200
+          width: 100
         },
         {
           //数据中读取的字段的名称
           prop: "stanNum",
           //列的名称
           label: "数据标准数目",
-          width: 250
+          width: 150
+        },
+        {
+          //数据中读取的字段的名称
+          prop: "description",
+          //列的名称
+          label: "描述",
+          width: 300
         },
       ],
       choseLevel: {
         level: 1,
-        levelId: [0, 0, 0]
+        levelInfo: [{}, {}, {}],
+        levelNum:0  //当前级别的分级数目
       },   //当前的分级
       config: {
         pager: 1,
         total: 10,
-        pageSize: 10
+        pageSize: 9
       }, //默认页数值
     }
   },
 
   methods: {
+    //刷新整个level
+    load() {
+      this.request.get("/level/findAll").then(res => {
+        console.log("function:/level/findAll")
+        console.log(res, 'res')
+        if (res.code === '200') {
+          this.$store.state.level.level = Level.cleanChildren(res.data) //刷新store中的level
+          console.log('level: level is')
+          console.log(this.$store.state.level.level)
+          this.getLevel()
+        } else {
+          this.$message.error(res.message)
+        }
+      })
+    },
+
     getLevel() {
-      getLevel({
-        page: this.config.pager,
-        name: this.searchName,
-        level: this.choseLevel.level,
-        preLevel:this.choseLevel.level===1 ? 0 : this.choseLevel.levelId[this.choseLevel.level-2]
-      }).then(({data: res}) => {
-            //上面是使用es6的解构赋值为res
-            console.log(res, 'res')
-            if (res.code === 20000) {
-              this.tableData = res.data.list
-              this.tableData = this.tableData.map(item => {
-                //对sexLabel字段进行映射
-                item.childrenNum = Level.getNextNum(this.$store.state.level.level,this.choseLevel.level,this.choseLevel.levelId,item.id)
-                item.preName = Level.getPreName(this.$store.state.level.level,this.choseLevel.level,this.choseLevel.levelId)
-                return item
-              })
-            }
-          }
-      )
+      this.config.loading = true
+      this.request.get("/level/findPage", {
+        params: {
+          pageNum: this.config.pager,
+          pageSize: this.config.pageSize,
+          name: this.searchName,
+          level: this.choseLevel.level,
+          pid: this.choseLevel.level === 1 ? null : this.choseLevel.levelInfo[this.choseLevel.level - 2].id
+        }
+      }).then(res => {
+        console.log("function:/level/findPge")
+        console.log(res, 'res')
+        if (res.code === '200') {
+          this.choseLevel.levelNum=this.tableData.length  //当前级别的分级数目
+          this.tableData = res.data.records.map(item=>{   //page返回的具体数据在data.records
+            item.preName=item.level===1?'无':this.choseLevel.levelInfo[this.choseLevel.level - 2].name
+            return item
+          })
+          this.config.total = res.data.total
+          this.config.loading = false
+        } else {
+          this.$message.error(res.message)
+        }
+      })
     },
 
     //下一级
     nextItem(item) {
-      this.searchForm.keyword=''
+      this.searchForm.keyword = ''
       this.searchName = ''
-      this.choseLevel.levelId[this.choseLevel.level - 1] = item.id
+      this.choseLevel.levelInfo[this.choseLevel.level - 1] = {id: item.id, name: item.name}
       this.choseLevel.level++
       this.getLevel()
     },
 
     //上一级
-    preItem(){
-      this.searchForm.keyword=''
+    preItem() {
+      this.searchForm.keyword = ''
       this.searchName = ''
-      this.choseLevel.levelId[this.choseLevel.level - 1] = 0
+      this.choseLevel.levelInfo[this.choseLevel.level - 1] = {}
       this.choseLevel.level--
       this.getLevel()
     },
 
     confirm() {
-      if (this.operateType === 'edit') {  //编辑
-        this.$confirm("此操作将更改您的身份信息并返回登录页，是否继续？", "提示", {
-          confirmButtonText: "确认",
-          cancelButtonText: "取消",
-          type: "warning"
-        }).then(() => {
-          editLevel({
-            level:this.operateForm.level,
-            id: this.operateForm.id,
-            name:this.operateForm.name
-          }).then(({data: res}) => {
-            console.log(res,'res')
-            this.isShow = false
-            //同$confirm类似
-            this.$message({
-              type: "success",
-              message: "修改成功！"
+      this.$refs.form.isValid(this.validInfo) //调用form中的函数
+      if (this.validInfo.value === 0) { //校验不通过
+        this.$message.warning(this.validInfo.message)
+      } else {
+        if (this.operateForm.name === '默认') {
+          this.$message.warning('分级名称不能为“默认”')
+        } else {
+          if (this.operateType === 'edit') {  //编辑
+            this.request.post("/level/update", {
+              id:this.operateForm.id,
+              level: this.operateForm.level,
+              name: this.operateForm.name,
+              pid: this.choseLevel.level === 1 ? 0 : this.choseLevel.levelInfo[this.choseLevel.level - 2].id,
+              description: this.operateForm.description
+            }).then(res => {
+              console.log("function:/level/update")
+              console.log(res, 'res')
+              if (res.code === '200') {
+                this.isShow = false
+                this.$message.success(res.message)
+                this.load()
+              } else {
+                this.$message.error(res.message)
+              }
             })
-            getTotalLevel().then(({data: res}) => {
-              console.log(res,'res')
-              this.$store.commit('clearLevel')
-              let level=Level.handleLevel(res.data.level)
-              this.$store.commit('setLevel',level)
-              this.$store.commit('addLevel',this.$router)
-              console.log('level: level is')
-              console.log(res.data.level)
-              this. getLevel()
-            })
-          })
-        })
-      } else {  //新增
-        addLevel({
-          level:this.operateForm.level,
-          name:this.operateForm.name,
-          preLevel:this.choseLevel.level===1 ? 0 : this.choseLevel.levelId[this.choseLevel.level-2]
-        }).then(({data: res}) => {
-          console.log(res,'res')
-          if (res.code === 20000) {
-            this.isShow = false
-            //同$confirm类似
-            this.$message({
-              type: "success",
-              message: "添加成功"
-            })
-            getTotalLevel().then(({data: res}) => {
-              console.log(res,'res')
-              this.$store.commit('clearLevel')
-              let level=Level.handleLevel(res.data.level)
-              this.$store.commit('setLevel',level)
-              this.$store.commit('addLevel',this.$router)
-              console.log('level: level is')
-              console.log(res.data.level)
-              this. getLevel()
+          } else {  //新增
+            this.request.post("/level/add", {
+              level: this.operateForm.level,
+              name: this.operateForm.name,
+              pid: this.choseLevel.level === 1 ? 0 : this.choseLevel.levelInfo[this.choseLevel.level - 2].id,
+              description: this.operateForm.description
+            }).then(res => {
+              console.log("function:/level/add")
+              console.log(res, 'res')
+              if (res.code === '200') {
+                this.isShow = false
+                this.$message.success(res.message)
+                this.load()
+              } else {
+                this.$message.error(res.message)
+              }
             })
           }
-        })
+        }
       }
     },
 
@@ -303,9 +348,24 @@ export default {
       this.operateForm = {
         name: '',
         level: this.choseLevel.level,
-        preName: Level.getPreName(this.$store.state.level.level,this.choseLevel.level,this.choseLevel.levelId),
+        preName: this.choseLevel.level === 1 ? '无' : this.choseLevel.levelInfo[this.choseLevel.level - 2].name,
         childrenNum: 0,
         stanNum: 0,
+      }
+    },
+
+    editItem(row){
+      this.isShow = true
+      this.operateType = 'edit'
+      //数据初始化
+      this.operateForm = {
+        id:row.id,
+        name: row.name,
+        level: row.level,
+        preName: this.choseLevel.level === 1 ? '无' : this.choseLevel.levelInfo[this.choseLevel.level - 2].name,
+        childrenNum:row.childrenNum,
+        stanNum: row.stanNum,
+        description: row.description
       }
     },
 
@@ -315,21 +375,7 @@ export default {
       this.getLevel()
     },
 
-    editItem(row) {
-      this.operateType = 'edit'
-      this.isShow = true
-      //表内数据显示为当前行内的数据，回写
-      this.operateForm = {
-        id:row.id,
-        name: row.name,
-        level: row.level,
-        preName: row.preName,
-        childrenNum: row.childrenNum,
-        stanNum: row.stanNum,
-      }
-    },
-
-    //删除单个用户
+    //删除单个
     deleteItem(row) {
       //通知，这里使用的是element-ui中MessageBox的confirm方法，因此需要在main.js中进行绑定
       this.$confirm("此操作将永久删除该信息，是否继续？", "提示", {
@@ -337,26 +383,15 @@ export default {
         cancelButtonText: "取消",
         type: "warning"
       }).then(() => {
-        deleteLevel({
-          level:this.choseLevel.level,
-          id: row.id,
-        }).then(() => {
-          //同$confirm类似
-          this.$message({
-            type: "success",
-            message: "删除成功！"
-          })
-          //更新列表
-          getTotalLevel().then(({data: res}) => {
-            console.log(res,'res')
-            this.$store.commit('clearLevel')
-            let level=Level.handleLevel(res.data.level)
-            this.$store.commit('setLevel',level)
-            this.$store.commit('addLevel',this.$router)
-            console.log('level: level is')
-            console.log(res.data.level)
-            this. getLevel()
-          })
+        this.request.delete("/level/"+row.id).then(res=>{
+          console.log("function:/level/delete")
+          console.log(res,'res')
+          if(res.code==='200'){
+            this.$message.success(res.message)
+            this.load()
+          }else{
+            this.$message.error(res.message)
+          }
         })
       })
     },
@@ -402,11 +437,13 @@ export default {
       align-items: center;
 
       .searchForm {
-        justify-content: center;
         margin: 0 0 0 25%;
-        display: flex;
-        height: 40px;
-        width: 40%;
+        padding: 10px 0 0 0;
+        display: inline-block;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+        width: auto;
       }
     }
 
@@ -417,7 +454,7 @@ export default {
       justify-content: center;
       align-items: center;
 
-      .add, .delete{
+      .add, .delete {
         margin: 0 10px 0 10px;
         height: 38px;
         width: 38px;
@@ -425,14 +462,16 @@ export default {
         justify-content: center;
         align-items: center;
       }
-      .back{
+
+      .back {
         margin: 0 10px 0 10px;
         height: 38px;
         display: flex;
         justify-content: center;
         align-items: center;
       }
-      .levelSelect{
+
+      .levelSelect {
         margin: 0 10px 0 10px;
         height: 38px;
         width: 40px;

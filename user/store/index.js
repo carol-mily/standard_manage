@@ -4,6 +4,7 @@ import tab from './tab'
 import user from './user'
 import level from './level'
 import standard from "./standard";
+import typeList from "./typeList"
 
 //将vuex进行全局注入
 Vue.use(Vuex)
@@ -14,6 +15,7 @@ export default new Vuex.Store({
         tab,
         user,
         level,
-        standard
+        standard,
+        typeList
     }
 })

@@ -19,7 +19,7 @@
 
     <el-dialog
         class="editTableDialog"
-        v-if="operateType==='checkTable'"
+        v-if="operateType==='editTable'"
         :title="'编辑表'"
         :visible.sync="tableIsShow"
         :modal-append-to-body="false">
@@ -27,6 +27,7 @@
           :form-label="asideTableLabel"
           :form="asideTableData"
           :inline="true"
+          :rules="tableRules"
           ref="form"></common-form>
       <div slot="footer" class="tableDialog_footer">
         <el-button type="danger" @click="deleteTable">删除</el-button>
@@ -44,6 +45,7 @@
           :form-label="asideTableLabel"
           :form="asideTableData"
           :inline="true"
+          :rules="tableRules"
           ref="form"></common-form>
       <div slot="footer" class="tableDialog_footer">
         <el-button @click="tableIsShow=false">取消</el-button>
@@ -61,6 +63,7 @@
           :form-label="optItemLabel"
           :form="optItemData"
           :inline="true"
+          :rules="itemRules"
           ref="form"></common-form>
       <div slot="footer" class="itemDialog_footer">
         <el-button @click="itemIsShow=false">取消</el-button>
@@ -78,6 +81,7 @@
           :form-label="optItemLabel"
           :form="optItemData"
           :inline="true"
+          :rules="itemRules"
           ref="form"></common-form>
       <div slot="footer" class="itemDialog_footer">
         <el-button @click="itemIsShow=false">取消</el-button>
@@ -92,14 +96,14 @@
       <div class="c-content" style="height: 100%">
         <info-card
             :card-data="cardStanData"
-            @checkStan="editStanOpt"></info-card>
+            @checkStan="checkStanOpt"></info-card>
       </div>
       <div class="r-content" style="height: 100%">
         <!--        <div class="img">-->
         <!--          <img class="download" :src="downloadImg" style="width: 18px; height: 18px"/>-->
         <!--          <img class="edit" :src="editImg" style="width: 18px; height: 18px"/>-->
         <!--        </div>-->
-        <el-button class="up" v-if="this.$store.state.standard.stanPage==='myJoin'" type="primary" icon="el-icon-upload2" plain @click="upload"></el-button>
+        <el-button class="up" v-if="this.$store.state.standard.stanPage==='myJoin'||this.$store.state.standard.stanPage==='myManage'" type="primary" icon="el-icon-upload2" plain @click="upload"></el-button>
         <el-button class="eye" type="primary" icon="el-icon-view" plain @click="checkStan"></el-button>
         <el-button class="manage" v-if="this.$store.state.standard.stanPage==='myManage'" type="primary" icon="el-icon-user" plain @click="manageStan"></el-button>
       </div>
@@ -147,30 +151,25 @@ import InfoCard from "@/components/InfoCard";
 import CommonAside from "@/components/CommonAside";
 import CommonTable from "@/components/CommonTable";
 import CommonForm from "@/components/CommonForm";
-import {
-  addItem,
-  editItem,
-  editStan,
-  editTable,
-  addTable,
-  deleteTable,
-  deleteItem,
-  getStanInfo,
-  getStanItem,
-  editStanState, sendMessage
-} from "../../api/data";
 import Level from "../../util/level";
+import Text from "../../util/text";
 
 export default {
   name: "edit",
   components: {InfoCard,CommonAside,CommonTable,CommonForm},
   data() {
+    let time = new Date();
+    let year = time.getFullYear();
+    let month = (time.getMonth()+1).toString().padStart(2,'0');
+    let day = time.getDate().toString().padStart(2,'0');
+    let today = year+'-'+month+'-'+day;
     return {
       downloadImg: require('@/assets/icon/download.png'),
       editImg: require('@/assets/icon/edit.png'),
       upImg:require('@/assets/icon/up.png'),
       eyeImg:require('@/assets/icon/eye.png'),
       operateType: 'checkStan',
+      today:today,
       stanIsShow: false,
       tableIsShow: false,
       itemIsShow:false,
@@ -190,21 +189,21 @@ export default {
           disabled:true
         },
         {
-          model: 'managerName',
+          model: 'mname',
           label: "负责人",
           type: "input",
           style: "width:200px;",
           disabled:true
         },
         {
-          model: 'editors',
+          model: 'editorsName',
           label: "编写者",
           type: "input",
           style: "width:200px;",
           disabled:true
         },
         {
-          model: 'level',
+          model: 'levelList',
           label: '分级',
           type: 'cascader',
           style: "width:200px;",
@@ -212,7 +211,7 @@ export default {
           disabled:true
         },
         {
-          model: 'creDay',
+          model: 'creday',
           label: "创建日期",
           type: "date",
           style: "width:200px;",
@@ -227,8 +226,7 @@ export default {
         },
 
       ],
-      asideStanData: {
-      },
+      asideStanData: {},
       asideTableLabel: [
         {
           model: 'name',
@@ -243,7 +241,7 @@ export default {
           style: "width:200px;",
         },
         {
-          model: 'creDay',
+          model: 'creday',
           label: "创建日期",
           type: "date",
           style: "width:200px;",
@@ -260,22 +258,55 @@ export default {
         name: '',
         ename: '',
         level: '',
-        creDay: '',
+        creday: '',
         description: ''
+      },
+      tableRules: {
+        name:[
+          {
+            required: true, //必填
+            message: "请输入名称", //校验不通过的提示信息
+            trigger: "blur"  //触法方式
+          },
+          {
+            min:1,
+            max:20,
+            message:"名称长度应在20个字符以内",
+            trigger: "blur"
+          },
+        ],
+        ename:[
+          {
+            required: true, //必填
+            message: "请输入英文名称", //校验不通过的提示信息
+            trigger: "blur"  //触法方式
+          },
+          {
+            min:1,
+            max:20,
+            message:"英文名称长度应在20个字符以内",
+            trigger: "blur"
+          },
+        ],
+        description:{
+          max:200,
+          message:"描述长度应在200个字符以内",
+          trigger: "blur"
+        }
       },
       cardStanData: {
         id: '',
         name: '',
         ename: '',
-        managerName: '',
-        editors: '',
-        creDay: '',
+        mname: '',
+        editorsName: '',
+        creday: '',
         levelName:'',
-        level: '',
+        levelList: '',
         description: '',
       },
       tableList:[],
-      tableId:0,
+      tableId:null,
       itemData: [],
       itemLabel: [
         {
@@ -299,7 +330,7 @@ export default {
         },
         {
           //数据中读取的字段的名称
-          prop: "type",
+          prop: "typeName",
           //列的名称
           label: "字段类型",
           width: "100px"
@@ -313,14 +344,14 @@ export default {
         },
         {
           //数据中读取的字段的名称
-          prop: "decimal",
+          prop: "decim",
           //列的名称
           label: "小数位数",
           width: "100px"
         },
         {
           //数据中读取的字段的名称
-          prop: "constraint",
+          prop: "cstraint",
           //列的名称
           label: "约束条件",
           width: "100px"
@@ -348,10 +379,11 @@ export default {
           style: "width:200px;",
         },
         {
-          model: 'type',
-          label: "字段类型",
-          type: "input",
+          model: 'typeList',
+          label: '字段类型',
+          type: 'cascader',
           style: "width:200px;",
+          options: this.$store.state.typeList.typeList
         },
         {
           model: 'length',
@@ -360,13 +392,13 @@ export default {
           style: "width:200px;",
         },
         {
-          model: 'decimal',
+          model: 'decim',
           label: "小数位数",
           type: "input",
           style: "width:200px;",
         },
         {
-          model: 'constraint',
+          model: 'cstraint',
           label: "约束条件",
           type: "input",
           style: "width:200px;",
@@ -378,123 +410,165 @@ export default {
           style: "width:510px;",
         },
       ],
-      itemNum:0,
-      itemId:0,
+      itemRules: {
+        name:[
+          {
+            required: true, //必填
+            message: "请输入字段名称", //校验不通过的提示信息
+            trigger: "blur"  //触法方式
+          },
+          {
+            min:1,
+            max:20,
+            message:"名字段称长度应在20个字符以内",
+            trigger: "blur"
+          },
+        ],
+        code:[
+          {
+            required: true, //必填
+            message: "请输入字段编码", //校验不通过的提示信息
+            trigger: "blur"  //触法方式
+          },
+          {
+            min:1,
+            max:20,
+            message:"字段编码长度应在20个字符以内",
+            trigger: "blur"
+          },
+        ],
+        length:[
+          {
+            required: true, //必填
+            message: "请输入字段长度", //校验不通过的提示信息
+            trigger: "blur"  //触法方式
+          },
+          {
+            type: "number",
+            transform: (value) => Number(value),
+            message: '字段长度应为数字',
+            trigger: "blur"  //触法方式
+          }
+        ],
+        decim:{
+          pattern: /^[0-9]*$/,
+          transform: (value) => Number(value),
+          message: '小数位数应为数字',
+          trigger: "blur"  //触法方式
+        },
+        cstraint:{
+          max:20,
+          message:"约束条件长度应在20个字符以内",
+          trigger: "blur"
+        },
+        remarks:{
+          max:200,
+          message:"描述长度应在200个字符以内",
+          trigger: "blur"
+        }
+      },
+      itemNum:null,
+      itemId:null,
+      validInfo:{ //检验form内信息是否通过校验
+        value:0,
+        message:''
+      },
       selection:[],
       pageName:'edit',
     }
   },
 
   methods: {
-    //得到完整数据结构信息
-    getCardInfo() {
-      getStanInfo({
-        stanId: this.$store.state.standard.stanId,
-        pageName: this.$store.state.standard.stanPage
-      }).then(({data: res}) => {
-        //上面是使用es6的解构赋值为res
-        console.log(res, 'res')
-        let editor = ''
-        for (let i = 0; i < res.data.list.editors.length; i++) {
-          editor = editor + res.data.list.editors[i].name + ' '
+    //刷新页面
+    load(){
+      this.request.get("/standard/findById/"+this.$store.state.standard.stanId).then(res=>{
+        console.log("function：/standard/findById")
+        console.log(res,'res')
+        if(res.code==='200'){
+          this.cardStanData=res.data
+          this.cardStanData.levelName = Level.getLevelName(this.$store.state.level.level, this.cardStanData.levelList)
+          if (this.cardStanData.state === 2) {
+            this.cardStanData.stateName = '已发布'
+          } else if (this.cardStanData.state === 1) {
+            this.cardStanData.stateName = '审核中'
+          } else {
+            this.cardStanData.stateName = '编写中'
+          }
+          this.cardStanData.editorsName=Text.textFromArray(this.cardStanData.editors)
+          this.loadTable()
+        }else{
+          this.$message.error(res.message)
         }
-        //设置全局变量
-        // this.$store.commit('clearStandard')
-        // this.$store.commit('setStandard',res.list[0])
-        // this.cardData=this.asyncStan
-        this.cardStanData = res.data.list
-        this.cardStanData.managerName=res.data.list.manager.name
-        this.cardStanData.editors = editor
-        this.cardStanData.levelName=Level.getLevelName(this.$store.state.level.level,res.data.list.level1,res.data.list.level2,res.data.list.level3)
-        this.cardStanData.level=Level.getLevelList(this.$store.state.level.level,res.data.list.level1,res.data.list.level2,res.data.list.level3)
-        this.tableList=res.data.list.table
-        this.itemData=res.data.list.table[0].item
-      });
+      })
+    },
+
+    //刷新tableList
+    loadTable(){
+      this.request.get("/table/findByStanId/"+this.$store.state.standard.stanId).then(res=>{
+        console.log("function：/table/findByStanId")
+        console.log(res,'res')
+        if(res.code==='200'){
+          this.tableList=res.data
+          if(this.tableList.length!==0){ //当表不为空时
+            this.tableId=this.tableId?this.tableId:this.tableList[0].id //tableId若不存在设置初始tableId
+            this.loadItem()
+          }
+        }else{
+          this.$message.error(res.message)
+        }
+      })
+    },
+
+    //刷新table的的item
+    loadItem(){
+      this.request.get("/item/findByTableId/"+this.tableId).then(res=>{
+        console.log("function：/item/findByTableId")
+        console.log(res,'res')
+        if(res.code==='200'){
+          this.itemData=res.data
+        }else{
+          this.$message.error(res.message)
+        }
+      })
     },
 
     //换表
     changeTable(item){
-      this.tableId=item.id
-      getStanItem({
-        stanId:this.$store.state.standard.stanId,
-        tableId: item.id,
-        pageName: this.$store.state.standard.stanPage,
-      }).then(({data: res}) => {
-        //上面是使用es6的解构赋值为res
-        console.log(res, 'res')
-        this.itemData=res.data.stanItem
-      });
+      this.tableId= item.id
+      this.loadItem()
     },
 
-    //编辑数据标准详情
-    editStanOpt() {
-      console.log('查看数据标准详情')
+    //查看数据标准详情
+    checkStanOpt() {
       this.operateType='checkStan'
       this.stanIsShow=true
       //表内数据显示为当前行内的数据，回写
       this.asideStanData = this.cardStanData
     },
 
-    //编辑数据标准
-    editStan(){
-      editStan({
-        stanId:this.$store.state.standard.stanId,
-        pageName: this.$store.state.standard.stanPage,
-        name:this.cardStanData.name,
-        ename:this.cardStanData.ename,
-        manager:this.cardStanData.managerName,
-        editors:this.cardStanData.editors,
-        creDay:this.cardStanData.creDay,
-        level:this.cardStanData.level,
-        description:this.cardStanData.description
-      }).then(()=>{
-        //同$confirm类似
-        this.$message({
-          type:"success",
-          message:"修改成功！"
-        })
-        //更新列表
-        this.stanIsShow=false
-        this.getCardInfo()
-      })
-    },
-
     //编辑表
     editTableOpt(item) {
-      console.log('查看表的详情'+item)
-      this.operateType='checkTable'
+      this.operateType='editTable'
       this.tableIsShow=true
       //表内数据显示为当前行内的数据，回写
-      this.asideTableData = this.tableList[item.id]
-      console.log('表的信息：'+this.asideTableData)
+      let table=this.tableList.filter(table=>table.id===item.id)[0]
+      this.asideTableData = Object.assign({}, table)  //Object对象的assign方法解决传引用赋值
       //换表，可以尝试看看有方法调用之前的函数吗
       this.tableId= item.id
-      getStanItem({
-        stanId:this.$store.state.standard.stanId,
-        tableId: item.id,
-        pageName: this.$store.state.standard.stanPage,
-      }).then(({data: res}) => {
-        //上面是使用es6的解构赋值为res
-        console.log(res, 'res')
-        this.itemData=res.stanItem
-      });
+      this.changeTable(item)
     },
 
     //添加表的操作
     addTableOpt(){
       console.log('添加表')
-      let time = new Date();
-      let year = time.getFullYear();
-      let month = (time.getMonth()+1).toString().padStart(2,'0');
-      let day = time.getDate().toString().padStart(2,'0');
-      let creDay = year+'-'+month+'-'+day;
       this.operateType='addTable'
       this.tableIsShow=true
       this.asideTableData = {
         name:'',
         ename:'',
-        creDay: creDay,
-        description: ''
+        creday: this.today,
+        description: '',
+        stanId:this.$store.state.standard.stanId  //添加原本没有的stanId
       }
     },
 
@@ -506,66 +580,60 @@ export default {
         cancelButtonText:"取消",
         type:"warning"
       }).then(()=>{
-        deleteTable({
-          stanId:this.$store.state.standard.stanId,
-          tableId: this.tableId,
-          pageName: this.$store.state.standard.stanPage,
-        }).then(()=>{
-          //同$confirm类似
-          this.$message({
-            type:"success",
-            message:"删除成功！"
-          })
-          this.tableIsShow=false
-          //更新列表
-          this.getCardInfo()
+        this.request.delete("/table/"+this.tableId).then(res=>{
+          console.log("function：/table/delete")
+          console.log(res,'res')
+          if(res.code==='200'){
+            this.$message.success(res.message)
+            this.tableIsShow=false
+            this.tableId=null
+            this.loadTable()
+          }else{
+            this.$message.error(res.message)
+          }
         })
       })
     },
 
     //添加表
     addTable(){
-      addTable({
-        stanId:this.$store.state.standard.stanId,
-        pageName: this.$store.state.standard.stanPage,
-        name:this.asideTableData.name,
-        ename:this.asideTableData.ename,
-        editors:this.asideTableData.editors,
-        creDay:this.asideTableData.creDay,
-        description:this.asideTableData.description
-      }).then(()=>{
-        //同$confirm类似
-        this.$message({
-          type:"success",
-          message:"添加成功！"
+      this.$refs.form.isValid(this.validInfo) //调用form中的函数
+      if (this.validInfo.value === 0) { //校验不通过
+        this.$message.warning(this.validInfo.message)
+      } else {
+        this.request.post("/table/add",this.asideTableData).then(res=>{
+          console.log("function：/table/add")
+          console.log(res,'res')
+          if(res.code==='200'){
+            this.$message.success(res.message)
+            this.tableIsShow=false
+            this.tableId=null
+            this.loadTable()
+          }else{
+            this.$message.error(res.message)
+          }
         })
-        //更新列表
-        this.tableIsShow=false
-        this.getCardInfo()
-      })
+      }
     },
 
     //编辑表
     editTable(){
-      editTable({
-        stanId:this.$store.state.standard.stanId,
-        tableId:this.tableId,
-        pageName: this.$store.state.standard.stanPage,
-        name:this.asideTableData.name,
-        ename:this.asideTableData.ename,
-        editors:this.asideTableData.editors,
-        creDay:this.asideTableData.creDay,
-        description:this.asideTableData.description
-      }).then(()=>{
-        //同$confirm类似
-        this.$message({
-          type:"success",
-          message:"修改成功！"
+      this.$refs.form.isValid(this.validInfo) //调用form中的函数
+      if (this.validInfo.value === 0) { //校验不通过
+        this.$message.warning(this.validInfo.message)
+      } else {
+        this.request.post("/table/update",this.asideTableData).then(res=>{
+          console.log("function：/table/update")
+          console.log(res,'res')
+          if(res.code==='200'){
+            this.$message.success(res.message)
+            this.tableIsShow=false
+            this.loadTable()
+          }else{
+            this.$message.error(res.message)
+          }
         })
-        //更新列表
-        this.tableIsShow=false
-        this.getCardInfo()
-      })
+      }
     },
 
     //编辑字段
@@ -575,7 +643,11 @@ export default {
       this.operateType='editItem'
       this.itemIsShow=true
       //表内数据显示为当前行内的数据，回写
-      this.optItemData=this.itemData[item.id]
+      let itemData=this.itemData.filter(i=>i.id===item.id)[0]
+      this.optItemData = Object.assign({}, itemData)  //Object对象的assign方法解决传引用赋值
+      this.optItemData.typeList=[this.optItemData.typeId]
+
+
     },
 
     //添加字段
@@ -584,7 +656,10 @@ export default {
       this.operateType='addItem'
       this.itemIsShow=true
       //表内数据显示为当前行内的数据，回写
-      this.optItemData= {}
+      this.optItemData= {
+        typeList:[1],
+        decim:null
+      }
     },
 
     //复选框里多选
@@ -604,33 +679,20 @@ export default {
         cancelButtonText:"取消",
         type:"warning"
       }).then(()=>{
-        const id= item.id
-        deleteItem({
-          stanId:this.$store.state.standard.stanId,
-          tableId: this.tableId,
-          pageName: this.$store.state.standard.stanPage,
-          itemId:[id]
-        }).then(()=>{
-          //同$confirm类似
-          this.$message({
-            type:"success",
-            message:"删除成功！"
-          })
-          //更新列表
-          getStanItem({
-            stanId:this.$store.state.standard.stanId,
-            tableId: this.tableId,
-            pageName: this.$store.state.standard.stanPage,
-          }).then(({data: res}) => {
-            //上面是使用es6的解构赋值为res
-            console.log(res, 'res')
-            this.itemData=res.stanItem
-          });
+        this.request.delete("/item/"+item.id).then(res=>{
+          console.log("function：/item/delete")
+          console.log(res,'res')
+          if(res.code==='200'){
+            this.$message.success(res.message)
+            this.loadItem()
+          }else{
+            this.$message.error(res.message)
+          }
         })
       })
     },
 
-    //删除字段
+    //删除多个字段
     deleteItem(){
       //通知，这里使用的是element-ui中MessageBox的confirm方法，因此需要在main.js中进行绑定
       this.$confirm("此操作将永久删除该信息，是否继续？","提示",{
@@ -638,95 +700,90 @@ export default {
         cancelButtonText:"取消",
         type:"warning"
       }).then(()=>{
-        deleteItem({
-          stanId:this.$store.state.standard.stanId,
-          tableId: this.tableId,
-          pageName: this.$store.state.standard.stanPage,
-          itemId:this.selection
-        }).then(()=>{
-          //同$confirm类似
-          this.$message({
-            type:"success",
-            message:"删除成功！"
-          })
-          //更新列表
-          getStanItem({
-            stanId:this.$store.state.standard.stanId,
-            tableId: this.tableId,
-            pageName: this.$store.state.standard.stanPage,
-          }).then(({data: res}) => {
-            //上面是使用es6的解构赋值为res
-            console.log(res, 'res')
-            this.itemData=res.stanItem
-          });
+        this.request.post("/item/delete/batch", this.selection).then(res => {
+          console.log('function:/item/delete/batch')
+          console.log(res, 'res')
+          if (res.code === '200') {
+            this.$message.success(res.message)
+            //更新列表
+            this.loadItem()
+          } else {
+            this.$message.error(res.message)
+          }
         })
       })
     },
 
     editItem(){
-      editItem({
-        stanId:this.$store.state.standard.stanId,
-        tableId:this.tableId,
-        itemId:this.itemId,
-        pageName: this.$store.state.standard.stanPage,
-        name:this.optItemData.name,
-        code:this.optItemData.code,
-        type:this.optItemData.type,
-        length:this.optItemData.length,
-        decimal:this.optItemData.decimal,
-        constraint:this.optItemData.constraint,
-        remarks:this.optItemData.remarks,
-      }).then(()=>{
-        //同$confirm类似
-        this.$message({
-          type:"success",
-          message:"修改成功！"
-        })
-        this.itemIsShow=false
-        //更新列表
-        getStanItem({
-          stanId:this.$store.state.standard.stanId,
-          tableId: this.tableId,
-          pageName: this.$store.state.standard.stanPage,
-        }).then(({data: res}) => {
-          //上面是使用es6的解构赋值为res
-          console.log(res, 'res')
-          this.itemData=res.stanItem
-        });
-      })
+      this.$refs.form.isValid(this.validInfo) //调用form中的函数
+      if (this.validInfo.value === 0) { //校验不通过
+        this.$message.warning(this.validInfo.message)
+      } else {
+        //处理所传数据
+        this.optItemData.typeId=this.optItemData.typeList[0]
+        let type=this.$store.state.typeList.typeList.filter(item=>item.id===this.optItemData.typeId)[0]
+        let typeName=type.name
+        let minLen=type.minLen
+        let maxLen=type.maxLen
+        if(this.optItemData.length<minLen||this.optItemData.length>maxLen){ //判断类型长度
+          if(minLen===maxLen){
+            this.$message.warning(typeName+"类型长度应为"+minLen)
+          }else{
+            this.$message.warning(typeName+"类型长度应为"+minLen+'-'+maxLen)
+          }
+        }else{
+          this.request.post("/item/update",this.optItemData).then(res=>{
+            console.log("function：/item/update")
+            console.log(res,'res')
+            if(res.code==='200'){
+              this.$message.success(res.message)
+              this.itemIsShow=false
+              this.loadItem()
+            }else{
+              this.$message.error(res.message)
+            }
+          })
+        }
+      }
     },
 
     //添加字段
     addItem(){
-      addItem({
-        stanId:this.$store.state.standard.stanId,
-        tableId:this.tableId,
-        pageName: this.$store.state.standard.stanPage,
-        name:this.optItemData.name,
-        code:this.optItemData.code,
-        type:this.optItemData.type,
-        length:this.optItemData.length,
-        decimal:this.optItemData.decimal,
-        constraint:this.optItemData.constraint,
-        remarks:this.optItemData.remarks,
-      }).then(()=>{
-        //同$confirm类似
-        this.$message({
-          type:"success",
-          message:"添加成功！"
-        })
-        this.itemIsShow=false
-        //更新列表
-        getStanItem({
-          stanId:this.$store.state.standard.stanId,
-          tableId: this.tableId,
-          pageName: this.$store.state.standard.stanPage,
-        }).then(({data: res}) => {
-          //上面是使用es6的解构赋值为res
-          console.log(res, 'res')
-          this.itemData=res.stanItem
-        });
-      })
+      if(this.tableId===null){
+        this.$message.warning("数据标准不存在表")
+      }else{
+        this.$refs.form.isValid(this.validInfo) //调用form中的函数
+        if (this.validInfo.value === 0) { //校验不通过
+          this.$message.warning(this.validInfo.message)
+        } else {
+          //处理所传数据
+          this.optItemData.tableId=this.tableId
+          this.optItemData.typeId=this.optItemData.typeList[0]
+          let type=this.$store.state.typeList.typeList.filter(item=>item.id===this.optItemData.typeId)[0]
+          let typeName=type.name
+          let minLen=type.minLen
+          let maxLen=type.maxLen
+          if(this.optItemData.length<minLen||this.optItemData.length>maxLen){ //判断类型长度
+            if(minLen===maxLen){
+              this.$message.warning(typeName+"类型长度应为"+minLen)
+            }else{
+              this.$message.warning(typeName+"类型长度应为"+minLen+'-'+maxLen)
+            }
+          }else{
+            this.request.post("/item/add",this.optItemData).then(res=>{
+              console.log("function：/item/add")
+              console.log(res,'res')
+              if(res.code==='200'){
+                this.$message.success(res.message)
+                this.itemIsShow=false
+                this.loadItem()
+              }else{
+                this.$message.error(res.message)
+              }
+            })
+          }
+        }
+      }
     },
 
     //提交审核
@@ -736,25 +793,35 @@ export default {
         cancelButtonText: "取消",
         type: "warning"
       }).then(() => {
-        editStanState({
+        this.request.post("/standard//changeState", {
           stanId: this.$store.state.standard.stanId,
           state: 1
-        }).then(() => {
-          sendMessage({
-            title: '项目 ' + this.cardStanData.name+ ' 审核',
-            type: 2, //0表示系统消息，1表示项目消息(需要确认的)，2表示项目消息(不需要确认的)
-            senderPhone: this.$store.state.user.user.phone,
-            receiverPhone: [this.cardStanData.manager.phone],
-            subDay: this.subDay,
-            text: '项目名称：' + this.cardStanData.name + '\n提交人：' + this.$store.state.user.user.name + '(手机号' + this.$store.state.user.user.phone + ')\n项目已提交审核，请审核！',
-          }).then(() => {
-            //同$confirm类似
-            this.$message({
-              type: "success",
-              message: "已发送信息！"
+        }).then(res => {
+          console.log("function:/standard//changeState")
+          console.log(res, 'res')
+          if (res.code === '200') {
+            this.request.post("/message/sendProMsg", {
+              title: '项目 ' + this.cardStanData.name+ ' 审核',
+              type: 1, //0表示系统消息,1代表项目消息
+              subday: this.today,
+              sphone: this.$store.state.user.user.phone,
+              text: '项目名称：' + this.cardStanData.name + '\n提交人：' + this.$store.state.user.user.name + '(手机号' + this.$store.state.user.user.phone + ')\n项目已提交审核，请审核！',
+              stanId: this.cardStanData.id,
+              proType: 3,//项目消息类型：1添加，2转让，3申请，4审核，5删除
+              uphones: [this.cardStanData.mphone]
+            }).then(res => {
+              console.log("function:/message/sendProMsg")
+              console.log(res, 'res')
+              if (res.code === '200') {
+                this.$message.success(res.message)
+                //更新列表
+                this.isShow = false
+                this.$router.push({name: this.$store.state.standard.stanPage}) //返回至我的参与
+              } else {
+                this.$message.error(res.message)
+              }
             })
-            this.$router.push({name: 'myJoin'}) //返回至我的参与
-          })
+          }
         })
       })
     },
@@ -779,16 +846,8 @@ export default {
     }
   },
 
-  //对store监听
-  // watch:{
-  //   '$store.state.standard.standId'(){
-  //     alert('变化')
-  //     this.getCardInfo()
-  //   }
-  // },
-
   created() {
-    this.getCardInfo()
+    this.load()
   }
 }
 </script>

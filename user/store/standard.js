@@ -5,7 +5,7 @@ export default {
     state: {
         stanId:'',
         stanPage:'',
-        standard:{}
+        standard:{},
     },
     mutations: {
         setStanId(state,val){

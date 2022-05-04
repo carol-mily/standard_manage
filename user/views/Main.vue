@@ -2,12 +2,12 @@
   <!--container布局-->
   <el-container style="height:100%;padding: 0">
     <el-header class="header">
-      <common-header></common-header>
+      <common-header :user="user"></common-header>
     </el-header>
     <common-tag />
     <el-main class="main">
       <!--展示嵌套路由的组件-->
-      <router-view></router-view>
+      <router-view @refreshUser="getUser"></router-view>
     </el-main>
   </el-container>
 </template>
@@ -22,8 +22,34 @@ export default {
     CommonHeader,
     CommonTag
   },
+
   data() {
-    return {}
+    return {
+      user:this.$store.state.user.user,
+    }
+  },
+
+  methods:{
+    /**
+     *获取用户信息
+     * 当info界面数据变化时，作为其父的main也需要刷新信息，以供其他组件使用（这里主要是Header）
+     */
+    getUser(){
+      if(this.$store.state.user.user.phone!==undefined){ //利用store中的user,phone来判断用户是否登录
+        this.request.get("/user/"+this.$store.state.user.user.phone).then(res=>{
+          if(res.code==='200'){
+            this.user=res.data
+          }else{
+            this.$message.error(res.message)
+          }
+        })
+      }
+    },
+  },
+
+  created() {
+    //从后台获取最新数据，因为登录时并没有获取avatar
+    this.getUser();
   }
 }
 </script>

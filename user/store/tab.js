@@ -1,32 +1,77 @@
 //存储点击菜单的状态
 import Cookie from "js-cookie";
+import Main from "../views/Main";
+import Home from "../views/home";
+import Login from "../views/login";
+import Register from "../views/register";
+import Forget from "../views/forget";
 
 export default {
     state: {
-        tabsList: [],
-        currentMenu: null,
-        menu: [],
-        routes:[]
-    },
-    mutations: {
-        startTag(state,val){
-            if(val===0){
-                state.tabsList = [
+        initState: [
+            {
+                path: '/',
+                name: 'Main',
+                component: Main,
+                // component:()=>import("../views/Main"),
+                //不明白redirect有什么作用
+                redirect: '/home',
+                children: [
+                    //静态路由，现在已改为动态路由
                     {
                         path: '/home',
+                        //为何可以根据name跳转页面原因在此
                         name: 'home',
-                        label: '首页',
-                    }
+                        component: Home
+                    },
                 ]
-            }else{
-                state.tabsList = [
-                    {
-                        path: '/total',
-                        name: 'total',
-                        label: '数据标准',
-                    }
-                ]
+            },
+            {
+                path: '/login',
+                name: '/login',
+                component: Login
+            },
+            {
+                path: '/register',
+                name: '/register',
+                component: Register
+            },
+            {
+                path: '/forget',
+                name: '/forget',
+                component: Forget
             }
+        ],
+        tabsList: [
+            {
+                id: 1,
+                isshow: true,
+                label: "首页",
+                name: "home",
+                path: "/",
+                pid: null,
+                status: 0,
+                url: "home/index"
+            }
+        ],
+        currentMenu: null,
+        menu: [
+            {
+                id: 1,
+                isshow: true,
+                label: "首页",
+                name: "home",
+                path: "/",
+                pid: null,
+                status: 0,
+                url: "home/index"
+            }
+        ],
+        routes: []
+    },
+    mutations: {
+        startTag(state, val) {
+            state.tabsList = [val]
         },
 
         closeTag(state, val) {
@@ -36,8 +81,19 @@ export default {
             state.tabsList.splice(result, 1)
         },
 
-        clearTag(state){
-            state.tabsList = []
+        clearTag(state) {
+            state.tabsList = [
+                {
+                    id: 1,
+                    isshow: true,
+                    label: "首页",
+                    name: "home",
+                    path: "/",
+                    pid: null,
+                    status: 0,
+                    url: "home/index"
+                }
+            ]
             Cookie.remove('tabsList')
         },
 
@@ -62,7 +118,18 @@ export default {
         },
 
         clearMenu(state) {
-            state.menu = []
+            state.menu = [
+                {
+                    id: 1,
+                    isshow: true,
+                    label: "首页",
+                    name: "home",
+                    path: "/",
+                    pid: null,
+                    status: 0,
+                    url: "home/index"
+                }
+            ]
             Cookie.remove('menu')
         },
 
@@ -109,7 +176,7 @@ export default {
             Cookie.remove('routes')
         },
 
-        addRoutes(state, router){
+        addRoutes(state, router) {
             if (!Cookie.get('routes')) {
                 return
             }
@@ -123,21 +190,21 @@ export default {
                 //判断是否有二级菜单
                 if (item.children) {
                     item.children = item.children.map(item => {
-                        console.log('加载路由：'+item.label)
+                        console.log('加载路由：' + item.label)
                         //注意这里是``而不是''
                         item.component = () => import(`../views/${item.url}`)
                         return item
                     })
                     routeArray.push(...item.children)
                 } else {
-                    console.log('加载路由：'+item.label)
+                    console.log('加载路由：' + item.label)
                     item.component = () => import(`../views/${item.url}`)
                     routeArray.push(item)
                 }
             })
             //路由的动态添加
             routeArray.forEach(item => {
-                router.addRoute('Main',item)
+                router.addRoute('Main', item)
             })
         }
     },
